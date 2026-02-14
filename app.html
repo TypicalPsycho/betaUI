@@ -995,6 +995,8 @@
      * - No persistence; state resets on refresh
      */
 
+    const API_BASE = window.SB_API_BASE || "https://api.signal-bench.com";
+
     const MockAdapter = (() => {
       let store = UIStore.load();
 
@@ -1064,7 +1066,37 @@
       };
     })();
 
-    const DataAdapter = MockAdapter;
+    const ApiAdapter = (local) => {
+      const postJson = async (path, payload) => {
+        const res = await fetch(`${API_BASE}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload || {})
+        });
+        const text = await res.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (_err) {
+          data = { raw: text };
+        }
+        if (!res.ok){
+          const msg = data.detail || data.error || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        return data;
+      };
+
+      return {
+        ...local,
+        sendTurn(payload){
+          return postJson("/turn", payload);
+        }
+      };
+    };
+
+    const DataAdapter = ApiAdapter(MockAdapter);
 
     const state = {
       activeCaseId: null,
@@ -1536,12 +1568,32 @@
       return copy[stage] || "No messages yet. Start with a common next step or ask a question to begin.";
     }
 
-    function sendMessage(text){
+    function stageToState(stage){
+      const map = {
+        Screen: "BUILDCASE",
+        Validate: "JUDGEROLE",
+        Prepare: "SIGNALTUNE",
+        Advance: "CAPTUREDEBRIEF",
+        Launch: "NEGOTIATE",
+        Closed: "JUMPSTART"
+      };
+      return map[stage] || "BUILDCASE";
+    }
+
+    function ensureOrchStore(){
+      const store = UIStore.load();
+      if (!store.orch) store.orch = { userId: null, caseMap: {} };
+      if (!store.orch.caseMap) store.orch.caseMap = {};
+      UIStore.save(store);
+      return store;
+    }
+
+    async function sendMessage(text){
       if (!state.activeCaseId){
         alert("Select a casefile before sending a message.");
         return;
       }
-      const storeSnapshot = UIStore.load();
+      const storeSnapshot = ensureOrchStore();
       const userMsg = DataAdapter.sendMessage(state.activeCaseId, {
         id: String(Date.now()) + Math.random().toString(16).slice(2),
         role: "user",
@@ -1561,30 +1613,45 @@
       renderMessages();
       typingEl.style.display = "block";
 
-      const full = "Got it. I’ll use that to guide the next step for this casefile.";
       const assistantMsg = {
         id: String(Date.now()) + Math.random().toString(16).slice(2),
         role: "assistant",
-        content: "",
+        content: "Thinking...",
         createdAt: new Date().toISOString()
       };
       state.messages.push(assistantMsg);
       renderMessages();
 
-      let i = 0;
-      const tick = () => {
-        i += 1;
-        assistantMsg.content = full.slice(0, i);
-        renderMessages();
-        if (i < full.length){
-          setTimeout(tick, 12);
-        } else {
-          typingEl.style.display = "none";
-          DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
-          renderMessages();
-        }
+      const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
+      const payload = {
+        user_message: text,
+        user_email: storeSnapshot.me?.email || null,
+        user_id: orch.userId || null,
+        case_id: orch.caseMap[state.activeCaseId] || null,
+        selected_action_id: state.compass.selectedStepLabel || null,
+        user_intent: state.intentKey || null,
+        client_state_hint: stageToState(state.activeStage)
       };
-      setTimeout(tick, 120);
+
+      try{
+        const resp = await DataAdapter.sendTurn(payload);
+        if (resp && resp.user_id){
+          orch.userId = resp.user_id;
+        }
+        if (resp && resp.case_id){
+          orch.caseMap[state.activeCaseId] = resp.case_id;
+        }
+        storeSnapshot.orch = orch;
+        UIStore.save(storeSnapshot);
+        assistantMsg.content = resp.assistant_message || "(empty response)";
+      } catch (err){
+        assistantMsg.content = "Sorry, something went wrong sending this message.";
+        showToast(err?.message || "Request failed.");
+      } finally {
+        typingEl.style.display = "none";
+        DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
+        renderMessages();
+      }
     }
 
     function enforceDemoGuards(){
