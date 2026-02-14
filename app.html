@@ -997,6 +997,18 @@
 
     const API_BASE = window.SB_API_BASE || "https://api.signal-bench.com";
 
+    (() => {
+      const store = UIStore.load();
+      if (!store.me){
+        const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+        store.me = { id, email: null };
+      }
+      if (!store.orch) store.orch = { userId: null, caseMap: {} };
+      if (!store.orch.caseMap) store.orch.caseMap = {};
+      UIStore.save(store);
+    })();
+
+
     const MockAdapter = (() => {
       let store = UIStore.load();
 
