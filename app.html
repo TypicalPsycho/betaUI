@@ -738,6 +738,7 @@
       padding:14px;
     }
     .modal h3{margin:0 0 10px 0; font-size:var(--fs-18)}
+    .modal .modal-sub{margin:-6px 0 10px 0; font-size:12px; color:var(--muted)}
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -966,7 +967,8 @@
   <!-- New Casefile Modal -->
   <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="Create new casefile">
     <div class="modal">
-      <h3>New Casefile</h3>
+      <h3 id="casefileModalTitle">New Casefile</h3>
+      <div class="modal-sub" id="casefileModalHint"></div>
 
       <div class="grid">
         <label class="field">
@@ -1182,6 +1184,8 @@
     const guardBanner = el("guardBanner");
     const toast = el("toast");
     const modalBackdrop = el("modalBackdrop");
+    const modalTitle = el("casefileModalTitle");
+    const modalHint = el("casefileModalHint");
     const btnNewCasefile = el("btnNewCasefile");
     const btnCancel = el("btnCancel");
     const btnCreate = el("btnCreate");
@@ -1281,7 +1285,7 @@
 
     // New casefile modal open/close
     btnNewCasefile.addEventListener("click", () => {
-      openModal();
+      openModal({ mode: "manual" });
     });
 
     btnCancel.addEventListener("click", closeModal);
@@ -1289,16 +1293,26 @@
       if (e.target === modalBackdrop) closeModal();
     });
 
-    function openModal(){
+    function openModal(opts){
+      const mode = opts?.mode || "manual";
+      const serverCaseId = opts?.serverCaseId || "";
+      modalTitle.textContent = mode === "server" ? "Name New Casefile" : "New Casefile";
+      modalHint.textContent = mode === "server"
+        ? "A new casefile was created on the server. Add a title and company so it appears in your list."
+        : "";
+      modalBackdrop.dataset.mode = mode;
+      modalBackdrop.dataset.serverCaseId = serverCaseId;
       modalBackdrop.style.display = "flex";
-      inputRole.value = "";
-      inputCompany.value = "";
-      btnCreate.disabled = true;
+      inputRole.value = opts?.role || "";
+      inputCompany.value = opts?.company || "";
+      btnCreate.disabled = !(inputRole.value.trim() && inputCompany.value.trim());
       inputRole.focus();
     }
 
     function closeModal(){
       modalBackdrop.style.display = "none";
+      modalBackdrop.dataset.mode = "";
+      modalBackdrop.dataset.serverCaseId = "";
     }
 
     // Enable Create button only when role + company exist
@@ -1311,7 +1325,17 @@
     btnCreate.addEventListener("click", () => {
       const role = inputRole.value.trim();
       const company = inputCompany.value.trim();
+      const mode = modalBackdrop.dataset.mode || "manual";
+      const serverCaseId = modalBackdrop.dataset.serverCaseId || "";
       const cf = DataAdapter.createCasefile({ role, company, stage: "screen" });
+      if (mode === "server" && serverCaseId){
+        const storeSnapshot = ensureOrchStore();
+        const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
+        orch.caseMap = orch.caseMap || {};
+        orch.caseMap[cf.id] = serverCaseId;
+        storeSnapshot.orch = orch;
+        UIStore.save(storeSnapshot);
+      }
       state.casefiles = DataAdapter.listCasefilesByStage();
       closeModal();
       render();
@@ -1655,7 +1679,21 @@
           orch.userId = resp.user_id;
         }
         if (resp && resp.case_id){
-          orch.caseMap[state.activeCaseId] = resp.case_id;
+          const serverCaseId = resp.case_id;
+          orch.caseMap = orch.caseMap || {};
+          const activeLocalId = state.activeCaseId;
+          const activeServerId = activeLocalId ? orch.caseMap[activeLocalId] : null;
+          const existingLocalId = Object.keys(orch.caseMap).find((key) => orch.caseMap[key] === serverCaseId);
+          if (existingLocalId){
+            if (existingLocalId !== activeLocalId){
+              setActive(existingLocalId);
+            }
+          } else if (!activeServerId && activeLocalId){
+            orch.caseMap[activeLocalId] = serverCaseId;
+          } else if (activeServerId && activeServerId !== serverCaseId){
+            openModal({ mode: "server", serverCaseId });
+            showToast("Name the new casefile so it appears in your list.");
+          }
         }
         storeSnapshot.orch = orch;
         UIStore.save(storeSnapshot);
