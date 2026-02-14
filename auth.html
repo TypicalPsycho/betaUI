@@ -135,6 +135,11 @@
     signInForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const store = UIStore.load();
+      if (!store.me){
+        store.me = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), email: signinEmail.value.trim() };
+      } else if (!store.me.email && signinEmail.value.trim()){
+        store.me.email = signinEmail.value.trim();
+      }
       store.auth = { ...(store.auth || {}), isAuthed: true };
       UIStore.save(store);
       if (signInNote) signInNote.textContent = "Signed in. Continuing…";

@@ -1682,6 +1682,8 @@
       }, 1600);
     }
 
+    ensureOrchStore();
+
     // Initial render
     state.casefiles = DataAdapter.listCasefilesByStage();
     render();
