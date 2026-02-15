@@ -2044,7 +2044,8 @@
     state.casefiles = DataAdapter.listCasefilesByStage();
     render();
     const lastActive = DataAdapter.getActiveCasefile();
-    if (lastActive){
+    const activeExists = lastActive && state.casefiles.some(c => c.id === lastActive);
+    if (activeExists){
       setActive(lastActive);
     } else if (state.casefiles.length){
       const lastCase = state.casefiles[state.casefiles.length - 1];

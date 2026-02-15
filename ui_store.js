@@ -1,10 +1,16 @@
 // Shared local store for demo flow (no backend).
 (() => {
-  const STORAGE_KEY = "sb.ui.demo.v1";
+  const STORAGE_NS = "sb.ui.v1";
+  const LAST_EMAIL_KEY = `${STORAGE_NS}::last_email`;
 
-  const load = () => {
+  const normalizeEmail = (value) => (value || "").trim().toLowerCase();
+  const keyFor = (email) => `${STORAGE_NS}::${email || "anon"}`;
+  const getActiveEmail = () => normalizeEmail(localStorage.getItem(LAST_EMAIL_KEY) || "");
+
+  const load = (email) => {
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const activeEmail = normalizeEmail(email) || getActiveEmail();
+      const raw = localStorage.getItem(keyFor(activeEmail || "anon"));
       if (raw) return JSON.parse(raw);
     }catch(_){}
     return {
@@ -20,17 +26,51 @@
     };
   };
 
-  const save = (store) => {
+  const save = (store, email) => {
     try{
+      const activeEmail = normalizeEmail(email)
+        || normalizeEmail(store?.me?.email)
+        || getActiveEmail();
       const clean = { ...store };
       delete clean.preferences;
       delete clean.feedback;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+      localStorage.setItem(keyFor(activeEmail || "anon"), JSON.stringify(clean));
+      if (activeEmail){
+        localStorage.setItem(LAST_EMAIL_KEY, activeEmail);
+      }
     }catch(_){}
   };
 
-  const clear = () => {
-    try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+  const clear = (email) => {
+    try{
+      const activeEmail = normalizeEmail(email) || getActiveEmail();
+      localStorage.removeItem(keyFor(activeEmail || "anon"));
+    }catch(_){}
+  };
+
+  const activateUser = (email) => {
+    const normalized = normalizeEmail(email);
+    if (!normalized) return;
+    const currentEmail = getActiveEmail();
+    if (currentEmail === normalized){
+      return;
+    }
+    const targetKey = keyFor(normalized);
+    const existing = localStorage.getItem(targetKey);
+    if (!existing){
+      const anonKey = keyFor(currentEmail || "anon");
+      const anonRaw = localStorage.getItem(anonKey);
+      if (anonRaw){
+        try{
+          const anonStore = JSON.parse(anonRaw);
+          const anonEmail = normalizeEmail(anonStore?.me?.email);
+          if (anonEmail && anonEmail === normalized){
+            localStorage.setItem(targetKey, anonRaw);
+          }
+        }catch(_){}
+      }
+    }
+    localStorage.setItem(LAST_EMAIL_KEY, normalized);
   };
 
   const seed = () => {
@@ -52,5 +92,5 @@
     return store;
   };
 
-  window.UIStore = { load, save, clear, seed };
+  window.UIStore = { load, save, clear, seed, activateUser };
 })();
