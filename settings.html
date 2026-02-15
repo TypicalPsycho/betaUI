@@ -125,7 +125,7 @@
         <section class="card">
           <div class="row">
             <button class="btn primary" id="btnSaveSettings" type="button">Save Settings</button>
-            <a class="btn" href="app.html">Return to App</a>
+            <a class="btn" href="app.html">Return to App without Saving</a>
           </div>
         </section>
 
@@ -233,7 +233,7 @@
       UITheme.applyTheme(theme);
       try{
         await postJson("/preferences", payload);
-        alert("Settings saved.");
+        window.location.href = "app.html";
       } catch (err){
         alert(err?.message || "Could not save settings.");
       }
@@ -279,4 +279,3 @@
   </script>
 </body>
 </html>
-

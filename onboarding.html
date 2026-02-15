@@ -67,10 +67,6 @@
               <span>How should we address you</span>
               <input type="text" placeholder="Preferred name" required />
             </label>
-            <label class="field" style="flex:1">
-              <span>Email</span>
-              <input type="email" placeholder="you@email.com" required />
-            </label>
           </div>
           <div class="row" style="align-items:center; gap:12px; justify-content:flex-start;">
             <label class="field" style="max-width:360px;">
@@ -177,9 +173,9 @@
     const resumeText = document.querySelector("textarea");
     const fullName = document.querySelector("input[placeholder='Full name']");
     const preferredName = document.querySelector("input[placeholder='Preferred name']");
-    const emailInput = document.querySelector("input[type='email']");
     const profileImage = document.getElementById("profileImage");
     const profilePreview = document.getElementById("profilePreview");
+    let profileImageData = "";
 
     const API_BASE = "https://api.signal-bench.com";
     const postJson = async (path, payload) => {
@@ -222,6 +218,7 @@
           profilePreview.style.backgroundImage = `url(${reader.result})`;
           profilePreview.style.backgroundSize = "cover";
           profilePreview.style.backgroundPosition = "center";
+          profileImageData = String(reader.result || "");
         };
         reader.readAsDataURL(file);
       });
@@ -247,7 +244,6 @@
       const ok = consentBox.checked
         && isResumeProvided()
         && fullName.value.trim().length > 0
-        && emailInput.value.trim().length > 0
         && levelCount > 0
         && statusSelected
         && toneSlider.value !== ""
@@ -263,18 +259,23 @@
     resumeFile.addEventListener("change", updateState);
     resumeText.addEventListener("input", updateState);
     fullName.addEventListener("input", updateState);
-    emailInput.addEventListener("input", updateState);
 
     btn.addEventListener("click", async () => {
       const store = UIStore.load();
       store.auth = { ...(store.auth || {}), isAuthed: true };
-      store.me = { id: store.me?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email: emailInput.value.trim() };
+      const existingEmail = store.me?.email || "";
+      store.me = { id: store.me?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email: existingEmail };
+      store.me.full_name = fullName.value.trim();
+      store.me.preferred_name = preferredName?.value.trim() || "";
+      if (profileImageData){
+        store.me.avatar_data_url = profileImageData;
+      }
       store.orch = store.orch || { userId: store.me.id, caseMap: {} };
       store.orch.userId = store.me.id;
 
       const u01Payload = {
         user_id: store.me.id,
-        user_email: emailInput.value.trim(),
+        user_email: existingEmail,
         full_name: fullName.value.trim(),
         preferred_name: preferredName?.value.trim() || "",
         resume_text: resumeText.value.trim(),
@@ -282,7 +283,7 @@
       };
       const prefPayload = {
         user_id: store.me.id,
-        user_email: emailInput.value.trim(),
+        user_email: existingEmail,
         tone: Number(toneSlider.value),
         length: Number(lengthSlider.value),
         career_level: levelChecks.filter((c) => c.checked).map((c) => c.value),
@@ -319,4 +320,3 @@
   </script>
 </body>
 </html>
-

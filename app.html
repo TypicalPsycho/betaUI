@@ -524,6 +524,42 @@
     .msg.assistant{
       align-self:flex-start;
     }
+    .msg.readonly{
+      max-width:100%;
+      width:100%;
+    }
+    .msg.assistant h1,
+    .msg.assistant h2,
+    .msg.assistant h3{
+      margin:6px 0;
+      font-size:var(--fs-14);
+      font-weight:700;
+    }
+    .msg.assistant p{
+      margin:6px 0;
+    }
+    .msg.assistant ul,
+    .msg.assistant ol{
+      margin:6px 0 6px 18px;
+      padding:0;
+    }
+    .msg.assistant li{
+      margin:4px 0;
+    }
+    .msg.assistant code{
+      font-family:var(--mono);
+      font-size:12px;
+      background:var(--panel);
+      padding:1px 4px;
+      border-radius:6px;
+    }
+    .msg.assistant pre{
+      margin:6px 0;
+      padding:8px 10px;
+      background:var(--panel);
+      border-radius:8px;
+      overflow:auto;
+    }
     .typing{
       display:none;
       font-size:var(--fs-12);
@@ -875,10 +911,10 @@
         <div class="profile-card">
           <div class="pc-user">
             <div class="avatar">
-              <img src="icons/newuser.jpg" alt="User avatar" />
+              <img id="profileAvatar" src="icons/newuser.jpg" alt="User avatar" />
             </div>
             <div class="pc-meta">
-              <div class="pc-name">Brant Nieminski</div>
+              <div class="pc-name" id="profileName">New User</div>
               <div class="pc-tier">Executive Tier</div>
             </div>
           </div>
@@ -957,8 +993,8 @@
             </div>
           </div>
 
-          <div class="hint">
-            <span>Demo environment. Data shown here is local and non‑persistent.</span>
+          <div class="hint" style="font-size:12px;">
+            <span>Beta software for testing and feedback. Share issues or ideas via <a href="feedback.html">Feedback</a>.</span>
           </div>
         </div>
       </main>
@@ -1132,6 +1168,20 @@
           }
           return getJson(`/messages?case_id=${encodeURIComponent(serverCaseId)}&limit=40`)
             .then((resp) => Array.isArray(resp.messages) ? resp.messages : []);
+        },
+        getU01(){
+          const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || "";
+          const email = store.me?.email || "";
+          const qs = userId ? `?user_id=${encodeURIComponent(userId)}` : `?user_email=${encodeURIComponent(email)}`;
+          return getJson(`/u01${qs}`);
+        },
+        getU02(){
+          const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || "";
+          const email = store.me?.email || "";
+          const qs = userId ? `?user_id=${encodeURIComponent(userId)}&limit=50` : `?user_email=${encodeURIComponent(email)}&limit=50`;
+          return getJson(`/u02${qs}`);
         }
       };
     };
@@ -1235,27 +1285,80 @@
     const msgInput = el("msg");
     const btnClearDemo = el("btnClearDemo");
 
-    const profileMd = [
-      "# U01 — Candidate Profile (Read Only)",
-      "",
-      "- Name: Brant Nieminski",
-      "- Title: Executive Tier",
-      "- Summary: Placeholder profile markdown for Beta 1 demo.",
-      "",
-      "## Evidence (Resume)",
-      "- Resume uploaded: Yes",
-      "- Raw text stored verbatim (append-only)"
-    ].join("\n");
+    const formatDate = (value) => {
+      if (!value) return "";
+      try{
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
+        return d.toISOString().slice(0, 10);
+      } catch (_err){
+        return String(value);
+      }
+    };
 
-    const storyMd = [
-      "# U02 — Storybook (Read Only)",
-      "",
-      "- Placeholder storybook markdown for Beta 1 demo.",
-      "- Additive evidence stories captured over time.",
-      "",
-      "## Stories",
-      "1. Example story entry (to be replaced by real U02 content)."
-    ].join("\n");
+    const shortId = (value) => {
+      if (!value) return "";
+      const str = String(value);
+      return str.length > 8 ? str.slice(0, 8) : str;
+    };
+
+    const buildProfileMarkdown = (u01) => {
+      if (!u01){
+        return "# U01 — Candidate Profile (Read Only)\n\nNo profile data found yet.";
+      }
+      const content = u01.content_json || u01;
+      const name = content.full_name || content.name || "";
+      const preferred = content.preferred_name || "";
+      const email = content.email || "";
+      const resume = content.resume_text || content.text || "";
+      const createdAt = formatDate(u01.created_at || content.created_at);
+      const lines = [
+        "# U01 — Candidate Profile (Read Only)",
+        "",
+        name ? `- Full name: ${name}` : null,
+        preferred ? `- Preferred name: ${preferred}` : null,
+        email ? `- Email: ${email}` : null,
+        createdAt ? `- Last updated: ${createdAt}` : null,
+        "",
+        "## Resume (Raw)",
+        resume ? "```" : null,
+        resume ? resume : null,
+        resume ? "```" : null
+      ].filter(Boolean);
+      return lines.join("\n");
+    };
+
+    const buildStoryMarkdown = (stories) => {
+      const cleaned = (stories || []).filter((story) => {
+        const content = story.content_json || story;
+        const text = String(content.text || content.story || content.notes || "").trim();
+        if (!text) return false;
+        if (text.toLowerCase() === "seeded") return false;
+        return true;
+      });
+      if (!cleaned.length){
+        return "# U02 — Storybook (Read Only)\n\nNo stories found yet.";
+      }
+      const lines = [
+        "# U02 — Storybook (Read Only)",
+        "",
+        `Total stories: ${cleaned.length}`,
+        "",
+        "## Stories"
+      ];
+      cleaned.forEach((story, idx) => {
+        const content = story.content_json || story;
+        const text = content.text || content.story || content.notes || "";
+        const createdAt = formatDate(story.created_at || content.created_at);
+        const id = shortId(story.u02_id || story.story_id || "");
+        lines.push(`${idx + 1}. **Story ${idx + 1}**${id ? ` (ID: ${id})` : ""}${createdAt ? ` — ${createdAt}` : ""}`);
+        if (text){
+          lines.push(text);
+        }
+        lines.push("");
+      });
+      return lines.join("\n");
+    };
 
     // Composer stubs
     el("btnAttach").addEventListener("click", () => {
@@ -1521,17 +1624,49 @@
     function setView(view){
       state.activeView = view;
       const isCasefile = view === "casefile";
-      chat.style.display = isCasefile ? "flex" : "none";
+      chat.style.display = "flex";
       el("compass").style.display = isCasefile ? "flex" : "none";
       composer.style.display = isCasefile ? "flex" : "none";
-      markdownView.style.display = isCasefile ? "none" : "block";
+      markdownView.style.display = "none";
       btnProfile.classList.toggle("active", view === "profile");
       btnStory.classList.toggle("active", view === "storybook");
 
       if (view === "profile"){
-        markdownContent.textContent = profileMd;
+        loadProfileView();
       } else if (view === "storybook"){
-        markdownContent.textContent = storyMd;
+        loadStorybookView();
+      }
+    }
+
+    function showReadOnly(markdown){
+      chatEmpty.style.display = "none";
+      messagesEl.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "msg assistant readonly";
+      div.innerHTML = renderMarkdown(markdown || "");
+      messagesEl.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function loadProfileView(){
+      showReadOnly("Loading profile...");
+      try{
+        const resp = await DataAdapter.getU01();
+        const md = buildProfileMarkdown(resp?.u01);
+        showReadOnly(md);
+      } catch (err){
+        showReadOnly(`Unable to load profile.\n\n${err?.message || "Please try again."}`);
+      }
+    }
+
+    async function loadStorybookView(){
+      showReadOnly("Loading storybook...");
+      try{
+        const resp = await DataAdapter.getU02();
+        const md = buildStoryMarkdown(resp?.stories || []);
+        showReadOnly(md);
+      } catch (err){
+        showReadOnly(`Unable to load storybook.\n\n${err?.message || "Please try again."}`);
       }
     }
 
@@ -1624,22 +1759,130 @@
       for (const msg of state.messages){
         const div = document.createElement("div");
         div.className = `msg ${msg.role}`;
-        div.textContent = msg.content;
+        if (msg.role === "assistant"){
+          div.innerHTML = renderMarkdown(msg.content || "");
+        } else {
+          div.textContent = msg.content || "";
+        }
         messagesEl.appendChild(div);
       }
       chat.scrollTop = chat.scrollHeight;
     }
 
-    function emptyGuidance(stage){
-      const copy = {
-        Screen: "No messages yet. Add the JD or key context to start screening this role.",
-        Validate: "No messages yet. List missing facts or risks you want to validate.",
-        Prepare: "No messages yet. Start tuning your narrative or signals for this role.",
-        Advance: "No messages yet. Capture a debrief or ask how to prepare for the next round.",
-        Launch: "No messages yet. Share offer details or decision constraints to evaluate.",
-        Closed: "This casefile is closed. Create a new casefile to begin again."
+    function renderMarkdown(input){
+      if (!input) return "";
+      const escaped = escapeHtml(String(input).replace(/\r\n/g, "\n"));
+      const withBlocks = renderBlockMarkdown(escaped);
+      return renderInlineMarkdown(withBlocks);
+    }
+
+    function escapeHtml(text){
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderInlineMarkdown(text){
+      return text
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>");
+    }
+
+    function renderBlockMarkdown(text){
+      const lines = text.split("\n");
+      let html = "";
+      let inUl = false;
+      let inOl = false;
+      let inCode = false;
+      let paragraph = [];
+
+      const flushParagraph = () => {
+        if (paragraph.length){
+          html += `<p>${paragraph.join(" ")}</p>`;
+          paragraph = [];
+        }
       };
-      return copy[stage] || "No messages yet. Start with a common next step or ask a question to begin.";
+      const closeLists = () => {
+        if (inUl){ html += "</ul>"; inUl = false; }
+        if (inOl){ html += "</ol>"; inOl = false; }
+      };
+
+      for (const rawLine of lines){
+        const line = rawLine.trimEnd();
+        if (line.startsWith("```")){
+          flushParagraph();
+          closeLists();
+          if (!inCode){
+            html += "<pre><code>";
+            inCode = true;
+          } else {
+            html += "</code></pre>";
+            inCode = false;
+          }
+          continue;
+        }
+        if (inCode){
+          html += `${line}\n`;
+          continue;
+        }
+
+        if (!line.trim()){
+          flushParagraph();
+          closeLists();
+          continue;
+        }
+
+        if (line.startsWith("### ")){
+          flushParagraph();
+          closeLists();
+          html += `<h3>${line.slice(4)}</h3>`;
+          continue;
+        }
+        if (line.startsWith("## ")){
+          flushParagraph();
+          closeLists();
+          html += `<h2>${line.slice(3)}</h2>`;
+          continue;
+        }
+        if (line.startsWith("# ")){
+          flushParagraph();
+          closeLists();
+          html += `<h1>${line.slice(2)}</h1>`;
+          continue;
+        }
+
+        const ulMatch = line.match(/^[-*]\s+(.*)/);
+        if (ulMatch){
+          flushParagraph();
+          if (inOl){ html += "</ol>"; inOl = false; }
+          if (!inUl){ html += "<ul>"; inUl = true; }
+          html += `<li>${ulMatch[1]}</li>`;
+          continue;
+        }
+
+        const olMatch = line.match(/^\d+\.\s+(.*)/);
+        if (olMatch){
+          flushParagraph();
+          if (inUl){ html += "</ul>"; inUl = false; }
+          if (!inOl){ html += "<ol>"; inOl = true; }
+          html += `<li>${olMatch[1]}</li>`;
+          continue;
+        }
+
+        paragraph.push(line);
+      }
+
+      flushParagraph();
+      closeLists();
+      if (inCode) html += "</code></pre>";
+      return html;
+    }
+
+    function emptyGuidance(stage){
+      return "Select a casefile on the left to start. The input bar below shows the active casefile and stage plus starter prompts. You can also just type in the space below the starter prompts and hit Enter to get started.";
     }
 
     function stageToState(stage){
@@ -1664,6 +1907,17 @@
       if (!store.orch.caseMap) store.orch.caseMap = {};
       UIStore.save(store);
       return store;
+    }
+
+    function hydrateProfileCard(){
+      const store = UIStore.load();
+      const nameEl = document.getElementById("profileName");
+      const avatarEl = document.getElementById("profileAvatar");
+      const displayName = store.me?.preferred_name || store.me?.full_name || store.me?.email || "New User";
+      if (nameEl) nameEl.textContent = displayName;
+      if (avatarEl && store.me?.avatar_data_url){
+        avatarEl.src = store.me.avatar_data_url;
+      }
     }
 
     async function sendMessage(text){
@@ -1786,6 +2040,7 @@
     }
 
     ensureOrchStore();
+    hydrateProfileCard();
 
     // Initial render
     state.casefiles = DataAdapter.listCasefilesByStage();
@@ -1793,6 +2048,11 @@
     const lastActive = DataAdapter.getActiveCasefile();
     if (lastActive){
       setActive(lastActive);
+    } else if (state.casefiles.length){
+      const lastCase = state.casefiles[state.casefiles.length - 1];
+      if (lastCase && lastCase.id){
+        setActive(lastCase.id);
+      }
     }
     updateCompass(null);
     bindStageDnD();
