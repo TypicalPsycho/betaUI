@@ -2037,28 +2037,56 @@
       }, 1600);
     }
 
-    ensureOrchStore();
-    hydrateProfileCard();
+    const syncIdentity = async () => {
+      try{
+        const res = await fetch(`${API_BASE}/whoami`, { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.email) return;
+        UIStore.activateUser?.(data.email);
+        const store = UIStore.load();
+        store.me = store.me || { id: data.user_id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email: data.email };
+        store.me.email = data.email;
+        if (data.user_id){
+          store.me.id = data.user_id;
+        }
+        store.orch = store.orch || { userId: data.user_id || store.me.id, caseMap: {} };
+        if (data.user_id){
+          store.orch.userId = data.user_id;
+        }
+        UIStore.save(store, data.email);
+      } catch (_err){
+        // noop
+      }
+    };
 
-    // Initial render
-    state.casefiles = DataAdapter.listCasefilesByStage();
-    render();
-    const lastActive = DataAdapter.getActiveCasefile();
-    const activeExists = lastActive && state.casefiles.some(c => c.id === lastActive);
-    if (activeExists){
-      setActive(lastActive);
-    } else if (state.casefiles.length){
-      const lastCase = state.casefiles[state.casefiles.length - 1];
-      if (lastCase && lastCase.id){
-        setActive(lastCase.id);
+    const boot = async () => {
+      await syncIdentity();
+      ensureOrchStore();
+      hydrateProfileCard();
+
+      // Initial render
+      state.casefiles = DataAdapter.listCasefilesByStage();
+      render();
+      const lastActive = DataAdapter.getActiveCasefile();
+      const activeExists = lastActive && state.casefiles.some(c => c.id === lastActive);
+      if (activeExists){
+        setActive(lastActive);
+      } else if (state.casefiles.length){
+        const lastCase = state.casefiles[state.casefiles.length - 1];
+        if (lastCase && lastCase.id){
+          setActive(lastCase.id);
+        } else {
+          updateCompass(null);
+        }
       } else {
         updateCompass(null);
       }
-    } else {
-      updateCompass(null);
-    }
-    bindStageDnD();
-    enforceDemoGuards();
+      bindStageDnD();
+      enforceDemoGuards();
+    };
+
+    boot();
 
     // DEV HOOK (comment out anytime): seed an example
     // state.casefiles.push({id:"seed1", role:"VP Opex", company:"MacQueen", stage:"prepare"});
