@@ -52,7 +52,7 @@
             <div class="row">
               <label class="field" style="flex:1">
                 <span>Private beta invite key</span>
-                <input id="inviteKey" type="text" placeholder="8‑character key" maxlength="8" />
+                <input id="inviteKey" type="text" placeholder="6-12 character key" maxlength="12" />
               </label>
               <label class="field" style="flex:1">
                 <span>Email</span>
@@ -111,7 +111,7 @@
     const createNote = document.getElementById("createNote");
     const signInNote = document.getElementById("signInNote");
 
-    const isInviteValid = () => /^[A-Za-z0-9]{8}$/.test(inviteKey.value.trim());
+    const isInviteValid = () => /^[A-Za-z0-9]{6,12}$/.test(inviteKey.value.trim());
     const isPassValid = () => createPass.value.length >= 8;
     const isPassMatch = () => createPass.value && createPass.value === createPassConfirm.value;
 
@@ -124,31 +124,61 @@
       el.addEventListener("input", updateCreateState);
     });
 
-    createForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const store = UIStore.load();
-      store.me = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), email: createEmail.value.trim() };
-      store.orch = store.orch || { userId: store.me.id, caseMap: {} };
-      store.orch.userId = store.me.id;
-      store.auth = { isAuthed: true, inviteKey: inviteKey.value.trim() };
-      UIStore.save(store);
-      if (createNote) createNote.textContent = "Account created. Continuing to onboarding…";
-      window.location.href = "onboarding.html";
-    });
-    signInForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const store = UIStore.load();
-      if (!store.me){
-        store.me = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), email: signinEmail.value.trim() };
-      } else if (!store.me.email && signinEmail.value.trim()){
-        store.me.email = signinEmail.value.trim();
+    const API_BASE = "https://api.signal-bench.com";
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
       }
-      store.orch = store.orch || { userId: store.me.id, caseMap: {} };
-      store.orch.userId = store.me.id;
-      store.auth = { ...(store.auth || {}), isAuthed: true };
-      UIStore.save(store);
-      if (signInNote) signInNote.textContent = "Signed in. Continuing…";
-      window.location.href = store.u01 ? "app.html" : "onboarding.html";
+      return data;
+    };
+
+    createForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const store = UIStore.load();
+      const email = createEmail.value.trim();
+      try{
+        const resp = await postJson("/users", { user_email: email });
+        const userId = resp.user_id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+        store.me = { id: userId, email };
+        store.orch = store.orch || { userId, caseMap: {} };
+        store.orch.userId = userId;
+        store.auth = { isAuthed: true, inviteKey: inviteKey.value.trim() };
+        UIStore.save(store);
+        if (createNote) createNote.textContent = "Account created. Continuing to onboarding…";
+        window.location.href = "onboarding.html";
+      } catch (err){
+        if (createNote) createNote.textContent = err?.message || "Could not create account.";
+      }
+    });
+    signInForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const store = UIStore.load();
+      const email = signinEmail.value.trim();
+      try{
+        const resp = await postJson("/users", { user_email: email });
+        const userId = resp.user_id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+        store.me = store.me || { id: userId, email };
+        store.me.id = userId;
+        if (!store.me.email) store.me.email = email;
+        store.orch = store.orch || { userId, caseMap: {} };
+        store.orch.userId = userId;
+        store.auth = { ...(store.auth || {}), isAuthed: true };
+        UIStore.save(store);
+        if (signInNote) signInNote.textContent = "Signed in. Continuing…";
+        window.location.href = store.u01 ? "app.html" : "onboarding.html";
+      } catch (err){
+        if (signInNote) signInNote.textContent = err?.message || "Could not sign in.";
+      }
     });
   </script>
 
@@ -171,4 +201,3 @@
   </script>
 </body>
 </html>
-
