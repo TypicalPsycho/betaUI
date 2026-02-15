@@ -3,7 +3,7 @@
 Private beta UI hosted on GitHub Pages and protected by Cloudflare Access (Email OTP).
 
 ## Live URLs
-- Beta entry: `https://beta.signal-bench.com/landing.html`
+- Beta entry: `https://beta.signal-bench.com/app.html`
 - App shell: `https://beta.signal-bench.com/app.html`
 
 ## Hosting
@@ -17,6 +17,12 @@ Cloudflare Access sits in front of the beta site and requires Email OTP for allo
 - Protected host: `beta.signal-bench.com`
 - Login method: One-time PIN (Email OTP)
 - Allowlist: specific invited emails (employees + friends)
+
+## Security model (beta)
+- UI access is gated by Cloudflare Access (Email OTP).
+- API access is separately gated by Cloudflare Access on `api.signal-bench.com`.
+- The orchestrator validates the Access JWT on every request and derives user identity from it.
+- Client-provided user_id values are ignored when Access is enabled.
 
 ## DNS / Domain Setup (Cloudflare)
 - `beta` CNAME -> `typicalpsycho.github.io` (proxied, orange cloud)

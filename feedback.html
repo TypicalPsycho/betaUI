@@ -37,8 +37,6 @@
             </button>
             <div class="brand-panel" role="menu">
 
-          <a href="landing.html" role="menuitem">Landing</a>
-          <a href="auth.html" role="menuitem">Auth</a>
           <a href="onboarding.html" role="menuitem">Onboarding</a>
           <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
           <a href="app.html" role="menuitem">App</a>
@@ -211,6 +209,7 @@
       try{
         await postJson("/feedback", payload);
         alert("Feedback submitted. Thank you.");
+        window.location.href = "app.html";
       } catch (err){
         alert(err?.message || "Could not submit feedback.");
       }
