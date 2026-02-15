@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
@@ -785,7 +786,7 @@
   </style>
 </head>
 
-<body>
+<body data-page="app">
   <!--
     Integration Notes (App)
     - On load: getMe, listCasefilesByStage, getMessages(activeCase)
@@ -1101,11 +1102,36 @@
         }
         return data;
       };
+      const getJson = async (path) => {
+        const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+        const text = await res.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (_err) {
+          data = { raw: text };
+        }
+        if (!res.ok){
+          const msg = data.detail || data.error || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        return data;
+      };
 
       return {
         ...local,
         sendTurn(payload){
           return postJson("/turn", payload);
+        },
+        getMessages(localCaseId){
+          const store = UIStore.load();
+          const orch = store.orch || { caseMap: {} };
+          const serverCaseId = orch.caseMap?.[localCaseId];
+          if (!serverCaseId){
+            return local.getMessages(localCaseId);
+          }
+          return getJson(`/messages?case_id=${encodeURIComponent(serverCaseId)}&limit=40`)
+            .then((resp) => Array.isArray(resp.messages) ? resp.messages : []);
         }
       };
     };
@@ -1117,6 +1143,7 @@
       activeView: "casefile", // casefile | profile | storybook
       casefiles: [], // {id, role, company, stage}
       messages: [],
+      noCaseReminderCount: 0,
       activeStage: "Screen",
       intentKey: null,
       compass: {
@@ -1571,8 +1598,19 @@
     }
 
     function loadMessages(caseId){
-      state.messages = DataAdapter.getMessages(caseId);
-      renderMessages();
+      const result = DataAdapter.getMessages(caseId);
+      if (result && typeof result.then === "function"){
+        result.then((msgs) => {
+          state.messages = Array.isArray(msgs) ? msgs : [];
+          renderMessages();
+        }).catch(() => {
+          state.messages = [];
+          renderMessages();
+        });
+      } else {
+        state.messages = Array.isArray(result) ? result : [];
+        renderMessages();
+      }
     }
 
     function renderMessages(){
@@ -1650,6 +1688,10 @@
       state.compass.selectedStepLabel = null;
       renderCompass();
       state.messages.push(userMsg);
+      const needsCaseReminder = !state.casefiles || state.casefiles.length === 0;
+      if (needsCaseReminder){
+        state.noCaseReminderCount += 1;
+      }
       renderMessages();
       typingEl.style.display = "block";
 
@@ -1705,6 +1747,17 @@
         typingEl.style.display = "none";
         DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
         renderMessages();
+        if (needsCaseReminder && state.noCaseReminderCount % 4 === 0){
+          const reminder = {
+            id: String(Date.now()) + Math.random().toString(16).slice(2),
+            role: "assistant",
+            content: "The real power of InterviewOS is when we compare what you're looking for in your next role to a target job description.  Click the New Casefile button, enter a Title and Company, then when you come back to this chat, upload a Job Description.",
+            createdAt: new Date().toISOString()
+          };
+          state.messages.push(reminder);
+          DataAdapter.sendMessage(state.activeCaseId, reminder);
+          renderMessages();
+        }
       }
     }
 
@@ -1751,5 +1804,3 @@
   </script>
 </body>
 </html>
-
-

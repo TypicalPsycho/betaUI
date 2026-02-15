@@ -21,7 +21,12 @@
   };
 
   const save = (store) => {
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }catch(_){}
+    try{
+      const clean = { ...store };
+      delete clean.preferences;
+      delete clean.feedback;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+    }catch(_){}
   };
 
   const clear = () => {

@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
 </head>
-<body>
+<body data-page="casefile_new">
   <!--
     Integration Notes (Casefile Setup)
     - Create casefile: company, role, optional URL
@@ -122,6 +123,24 @@
     const btnCreate = document.getElementById("btnCreateCasefile");
     const btnSkip = document.getElementById("btnSkipCasefile");
 
+    const API_BASE = "https://api.signal-bench.com";
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+
     const hasJD = () => {
       return (jdFile.files && jdFile.files.length > 0) || jdText.value.trim().length > 0;
     };
@@ -138,28 +157,55 @@
       el.addEventListener("change", updateState);
     });
 
-    btnCreate.addEventListener("click", () => {
+    btnCreate.addEventListener("click", async () => {
       const store = UIStore.load();
-      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-      const cf = {
-        id,
-        role: jobTitle.value.trim(),
-        company: companyName.value.trim(),
-        stage: "screen",
-        companyUrl: document.querySelector("input[type='url']").value.trim()
+      const localId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      const role = jobTitle.value.trim();
+      const company = companyName.value.trim();
+      const companyUrl = document.querySelector("input[type='url']").value.trim();
+      const userId = store.orch?.userId || store.me?.id || null;
+      const userEmail = store.me?.email || "";
+      const createPayload = {
+        user_id: userId,
+        user_email: userEmail,
+        title: `${role} @ ${company}`,
+        company_name: company,
+        role_title: role,
+        company_url: companyUrl,
+        stage: "screen"
       };
-      store.casefiles = store.casefiles || [];
-      store.casefiles.push(cf);
-      store.activeCaseId = id;
-      store.u03 = store.u03 || {};
-      store.u03[id] = {
-        jdText: jdText.value.trim(),
-        createdAt: new Date().toISOString(),
-        applied: document.querySelector("input[name='applied']:checked")?.value || "",
-        interviewed: document.querySelector("input[name='interviewed']:checked")?.value || ""
-      };
-      UIStore.save(store);
-      window.location.href = "app.html";
+      try{
+        const created = await postJson("/casefiles", createPayload);
+        const serverCaseId = created.case_id;
+        store.casefiles = store.casefiles || [];
+        store.casefiles.push({
+          id: localId,
+          role,
+          company,
+          stage: "screen",
+          companyUrl
+        });
+        store.activeCaseId = localId;
+        store.orch = store.orch || { userId: userId, caseMap: {} };
+        store.orch.caseMap = store.orch.caseMap || {};
+        if (serverCaseId) store.orch.caseMap[localId] = serverCaseId;
+        UIStore.save(store);
+
+        const jdPayload = {
+          user_id: userId,
+          user_email: userEmail,
+          case_id: serverCaseId,
+          jd_text: jdText.value.trim(),
+          applied: document.querySelector("input[name='applied']:checked")?.value || "",
+          interviewed: document.querySelector("input[name='interviewed']:checked")?.value || ""
+        };
+        if (jdPayload.jd_text){
+          await postJson("/u03", jdPayload);
+        }
+        window.location.href = "app.html";
+      } catch (err){
+        alert(err?.message || "Could not create casefile. Please try again.");
+      }
     });
     btnSkip.addEventListener("click", () => {
       window.location.href = "app.html";

@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
 </head>
-<body>
+<body data-page="settings">
   <!--
     Integration Notes (Settings)
     - Save preferences: tone, length, career level, employment status
@@ -117,7 +118,7 @@
         <section class="card">
           <h2 class="title" style="font-size:22px;">Account Controls</h2>
           <div class="row">
-            <button class="btn" type="button">Logout</button>
+            <button class="btn" id="btnLogout" type="button">Logout</button>
           </div>
         </section>
 
@@ -145,44 +146,97 @@
     const btnSave = document.getElementById("btnSaveSettings");
     const btnLoad = document.getElementById("btnLoadDemo");
     const btnClear = document.getElementById("btnClearDemo");
+    const btnLogout = document.getElementById("btnLogout");
     const toneSlider = document.getElementById("toneSlider");
     const lengthSlider = document.getElementById("lengthSlider");
     const themeRadios = Array.from(document.querySelectorAll("input[name='theme']"));
     const levelChecks = Array.from(document.querySelectorAll("input[name='level']"));
     const statusRadios = Array.from(document.querySelectorAll("input[name='status']"));
 
-    // Hydrate from store
+    const API_BASE = "https://api.signal-bench.com";
+    const getJson = async (path) => {
+      const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+
+    // Hydrate from SQL
     const storeInit = UIStore.load();
-    if (storeInit.preferences){
-      if (storeInit.preferences.tone) toneSlider.value = storeInit.preferences.tone;
-      if (storeInit.preferences.length) lengthSlider.value = storeInit.preferences.length;
-      if (Array.isArray(storeInit.preferences.careerLevel)){
-        levelChecks.forEach((c) => c.checked = storeInit.preferences.careerLevel.includes(c.value));
+    const resolveUser = () => ({
+      userId: storeInit.orch?.userId || storeInit.me?.id || null,
+      userEmail: storeInit.me?.email || ""
+    });
+    const hydratePrefs = async () => {
+      const { userId, userEmail } = resolveUser();
+      if (!userId && !userEmail) return;
+      const qs = userId ? `?user_id=${encodeURIComponent(userId)}` : `?user_email=${encodeURIComponent(userEmail)}`;
+      try{
+        const resp = await getJson(`/preferences${qs}`);
+        const prefs = resp.preferences || {};
+        if (prefs.tone !== null && prefs.tone !== undefined) toneSlider.value = prefs.tone;
+        if (prefs.length !== null && prefs.length !== undefined) lengthSlider.value = prefs.length;
+        if (Array.isArray(prefs.career_level)){
+          levelChecks.forEach((c) => c.checked = prefs.career_level.includes(c.value));
+        } else if (typeof prefs.career_level === "string"){
+          const parts = prefs.career_level.split(",").map((x) => x.trim()).filter(Boolean);
+          levelChecks.forEach((c) => c.checked = parts.includes(c.value));
+        }
+        if (prefs.employment_status){
+          const r = statusRadios.find((x) => x.value === prefs.employment_status);
+          if (r) r.checked = true;
+        }
+      } catch (_err){
+        // ignore load errors for now
       }
-      if (storeInit.preferences.employmentStatus){
-        const r = statusRadios.find((x) => x.value === storeInit.preferences.employmentStatus);
-        if (r) r.checked = true;
-      }
-    }
+    };
+    hydratePrefs();
     const themeKey = localStorage.getItem("sb.ui.theme") || "editorial";
     themeRadios.forEach((r) => r.checked = r.value === themeKey);
     input.addEventListener("input", () => {
       btn.disabled = input.value.trim() !== "DELETE MY ACCOUNT";
     });
     btn.addEventListener("click", () => alert("Delete account (stub)"));
-    btnSave.addEventListener("click", () => {
+    btnSave.addEventListener("click", async () => {
       const store = UIStore.load();
-      store.preferences = {
-        tone: toneSlider.value,
-        length: lengthSlider.value,
-        careerLevel: levelChecks.filter((c) => c.checked).map((c) => c.value),
-        employmentStatus: statusRadios.find((r) => r.checked)?.value || ""
+      const payload = {
+        user_id: store.orch?.userId || store.me?.id || null,
+        user_email: store.me?.email || "",
+        tone: Number(toneSlider.value),
+        length: Number(lengthSlider.value),
+        career_level: levelChecks.filter((c) => c.checked).map((c) => c.value),
+        employment_status: statusRadios.find((r) => r.checked)?.value || ""
       };
       const theme = themeRadios.find((r) => r.checked)?.value || "editorial";
       localStorage.setItem("sb.ui.theme", theme);
       UITheme.applyTheme(theme);
-      UIStore.save(store);
-      alert("Settings saved (demo).");
+      try{
+        await postJson("/preferences", payload);
+        alert("Settings saved.");
+      } catch (err){
+        alert(err?.message || "Could not save settings.");
+      }
     });
     themeRadios.forEach((r) => r.addEventListener("change", () => {
       localStorage.setItem("sb.ui.theme", r.value);
@@ -196,6 +250,14 @@
       UIStore.clear();
       window.location.reload();
     });
+    if (btnLogout){
+      btnLogout.addEventListener("click", () => {
+        const store = UIStore.load();
+        store.auth = { ...(store.auth || {}), isAuthed: false };
+        UIStore.save(store);
+        window.location.href = "auth.html";
+      });
+    }
   </script>
 
 

@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
 </head>
-<body>
+<body data-page="auth">
   <!--
     Integration Notes (Auth)
     - Create account: invite_key + email + password (>=8, confirm match)
@@ -127,6 +128,8 @@
       e.preventDefault();
       const store = UIStore.load();
       store.me = { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), email: createEmail.value.trim() };
+      store.orch = store.orch || { userId: store.me.id, caseMap: {} };
+      store.orch.userId = store.me.id;
       store.auth = { isAuthed: true, inviteKey: inviteKey.value.trim() };
       UIStore.save(store);
       if (createNote) createNote.textContent = "Account created. Continuing to onboarding…";
@@ -140,6 +143,8 @@
       } else if (!store.me.email && signinEmail.value.trim()){
         store.me.email = signinEmail.value.trim();
       }
+      store.orch = store.orch || { userId: store.me.id, caseMap: {} };
+      store.orch.userId = store.me.id;
       store.auth = { ...(store.auth || {}), isAuthed: true };
       UIStore.save(store);
       if (signInNote) signInNote.textContent = "Signed in. Continuing…";

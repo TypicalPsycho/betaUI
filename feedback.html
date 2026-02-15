@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
   <style>
     .slider-row{display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;}
     .slider-meta{font-size:13px; color:var(--muted); min-width:80px; text-align:right;}
@@ -19,7 +20,7 @@
     .btn.mailto{font-size:14px; font-weight:600; line-height:1;}
   </style>
 </head>
-<body>
+<body data-page="feedback">
   <!--
     Integration Notes (Feedback)
     - Sliders submit only if touched
@@ -169,25 +170,50 @@
       slider.addEventListener("input", updateMeta);
     });
 
-    document.getElementById("btnSubmit").addEventListener("click", () => {
+    const API_BASE = "https://api.signal-bench.com";
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+
+    document.getElementById("btnSubmit").addEventListener("click", async () => {
       const store = UIStore.load();
       const ratings = {};
       sliders.forEach((s) => {
         if (s.dataset.touched === "true") ratings[s.dataset.key] = Number(s.value);
       });
+      const userId = store.orch?.userId || store.me?.id || null;
+      const caseId = store.orch?.caseMap?.[store.activeCaseId] || null;
       const payload = {
+        user_id: userId,
+        user_email: store.me?.email || "",
+        case_id: caseId,
         ratings,
         type: document.querySelector("input[name='type']:checked")?.value || "",
         summary: document.querySelector("input[type='text']")?.value.trim() || "",
         situation: document.querySelectorAll("textarea")[0]?.value.trim() || "",
         description: document.querySelectorAll("textarea")[1]?.value.trim() || "",
-        followUp: document.getElementById("followUp")?.checked || false,
+        follow_up: document.getElementById("followUp")?.checked || false,
         createdAt: new Date().toISOString()
       };
-      store.feedback = store.feedback || [];
-      store.feedback.push(payload);
-      UIStore.save(store);
-      alert("Feedback submitted (demo).");
+      try{
+        await postJson("/feedback", payload);
+        alert("Feedback submitted. Thank you.");
+      } catch (err){
+        alert(err?.message || "Could not submit feedback.");
+      }
     });
     document.getElementById("btnCancel").addEventListener("click", () => {
       alert("Feedback not submitted");

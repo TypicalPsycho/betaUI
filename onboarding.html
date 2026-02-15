@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="ui_shell.css" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_guard.js"></script>
 </head>
-<body>
+<body data-page="onboarding">
   <!--
     Integration Notes (Onboarding)
     - Create U01 from name/email/resume + consent
@@ -175,9 +176,28 @@
     const resumeFile = document.querySelector("input[type='file']");
     const resumeText = document.querySelector("textarea");
     const fullName = document.querySelector("input[placeholder='Full name']");
+    const preferredName = document.querySelector("input[placeholder='Preferred name']");
     const emailInput = document.querySelector("input[type='email']");
     const profileImage = document.getElementById("profileImage");
     const profilePreview = document.getElementById("profilePreview");
+
+    const API_BASE = "https://api.signal-bench.com";
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
 
     if (profilePreview){
       profilePreview.style.width = "56px";
@@ -245,26 +265,38 @@
     fullName.addEventListener("input", updateState);
     emailInput.addEventListener("input", updateState);
 
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const store = UIStore.load();
       store.auth = { ...(store.auth || {}), isAuthed: true };
       store.me = { id: store.me?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email: emailInput.value.trim() };
-      store.u01 = {
-        fullName: fullName.value.trim(),
-        nickname: "",
-        email: emailInput.value.trim(),
-        resumeText: resumeText.value.trim(),
-        consent: consentBox.checked,
-        createdAt: new Date().toISOString()
+      store.orch = store.orch || { userId: store.me.id, caseMap: {} };
+      store.orch.userId = store.me.id;
+
+      const u01Payload = {
+        user_id: store.me.id,
+        user_email: emailInput.value.trim(),
+        full_name: fullName.value.trim(),
+        preferred_name: preferredName?.value.trim() || "",
+        resume_text: resumeText.value.trim(),
+        consent: consentBox.checked
       };
-      store.preferences = {
-        tone: toneSlider.value,
-        length: lengthSlider.value,
-        careerLevel: levelChecks.filter((c) => c.checked).map((c) => c.value),
-        employmentStatus: statusRadios.find((r) => r.checked)?.value || ""
+      const prefPayload = {
+        user_id: store.me.id,
+        user_email: emailInput.value.trim(),
+        tone: Number(toneSlider.value),
+        length: Number(lengthSlider.value),
+        career_level: levelChecks.filter((c) => c.checked).map((c) => c.value),
+        employment_status: statusRadios.find((r) => r.checked)?.value || ""
       };
-      UIStore.save(store);
-      window.location.href = "casefile_new.html";
+      try{
+        await postJson("/u01", u01Payload);
+        await postJson("/preferences", prefPayload);
+        store.u01 = { createdAt: new Date().toISOString() };
+        UIStore.save(store);
+        window.location.href = "casefile_new.html";
+      } catch (err){
+        alert(err?.message || "Could not save your profile. Please try again.");
+      }
     });
   </script>
 
