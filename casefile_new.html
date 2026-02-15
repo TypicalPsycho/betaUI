@@ -175,24 +175,25 @@
       try{
         const created = await postJson("/casefiles", createPayload);
         const serverCaseId = created.case_id;
+        const caseId = serverCaseId || localId;
         store.casefiles = store.casefiles || [];
         store.casefiles.push({
-          id: localId,
+          id: caseId,
           role,
           company,
           stage: "screen",
           companyUrl
         });
-        store.activeCaseId = localId;
+        store.activeCaseId = caseId;
         store.orch = store.orch || { userId: userId, caseMap: {} };
         store.orch.caseMap = store.orch.caseMap || {};
-        if (serverCaseId) store.orch.caseMap[localId] = serverCaseId;
+        store.orch.caseMap[caseId] = serverCaseId || caseId;
         UIStore.save(store);
 
         const jdPayload = {
           user_id: userId,
           user_email: userEmail,
-          case_id: serverCaseId,
+          case_id: caseId,
           jd_text: jdText.value.trim(),
           applied: document.querySelector("input[name='applied']:checked")?.value || "",
           interviewed: document.querySelector("input[name='interviewed']:checked")?.value || ""

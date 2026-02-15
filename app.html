@@ -1152,6 +1152,24 @@
         return data;
       };
 
+      const normalizeStage = (value) => {
+        const s = String(value || "").toLowerCase();
+        const allowed = ["screen", "validate", "prepare", "advance", "launch", "closed"];
+        return allowed.includes(s) ? s : "screen";
+      };
+
+      const mapCasefiles = (rows) => {
+        return (rows || [])
+          .map((row) => ({
+            id: row.case_id || row.id || "",
+            role: row.role_title || "",
+            company: row.company_name || "",
+            stage: normalizeStage(row.active_state || row.status || "screen"),
+            title: row.title || ""
+          }))
+          .filter((row) => row.id);
+      };
+
       return {
         ...local,
         sendTurn(payload){
@@ -1160,12 +1178,66 @@
         getMessages(localCaseId){
           const store = UIStore.load();
           const orch = store.orch || { caseMap: {} };
-          const serverCaseId = orch.caseMap?.[localCaseId];
+          const serverCaseId = orch.caseMap?.[localCaseId] || localCaseId;
           if (!serverCaseId){
             return local.getMessages(localCaseId);
           }
           return getJson(`/messages?case_id=${encodeURIComponent(serverCaseId)}&limit=40`)
             .then((resp) => Array.isArray(resp.messages) ? resp.messages : []);
+        },
+        async listCasefilesByStage(){
+          try{
+            const resp = await getJson("/casefiles");
+            const rows = Array.isArray(resp.casefiles) ? resp.casefiles : [];
+            const mapped = mapCasefiles(rows);
+            const store = UIStore.load();
+            store.casefiles = mapped;
+            store.orch = store.orch || { userId: store.orch?.userId || store.me?.id || null, caseMap: {} };
+            store.orch.caseMap = store.orch.caseMap || {};
+            mapped.forEach((cf) => {
+              store.orch.caseMap[cf.id] = cf.id;
+            });
+            UIStore.save(store);
+            return mapped;
+          } catch (_err){
+            return local.listCasefilesByStage();
+          }
+        },
+        async createCasefile(payload){
+          const store = UIStore.load();
+          const role = payload?.role || "";
+          const company = payload?.company || "";
+          const stage = payload?.stage || "screen";
+          const userId = store.orch?.userId || store.me?.id || null;
+          const userEmail = store.me?.email || "";
+          const title = payload?.title || (role && company ? `${role} @ ${company}` : role || company || "New Casefile");
+          const createPayload = {
+            user_id: userId,
+            user_email: userEmail,
+            title,
+            company_name: company,
+            role_title: role,
+            stage
+          };
+          try{
+            const resp = await postJson("/casefiles", createPayload);
+            const serverCaseId = resp.case_id || resp.casefile_id || null;
+            const cf = {
+              id: serverCaseId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
+              role,
+              company,
+              stage
+            };
+            store.casefiles = store.casefiles || [];
+            store.casefiles.push(cf);
+            store.orch = store.orch || { userId: userId, caseMap: {} };
+            store.orch.caseMap = store.orch.caseMap || {};
+            store.orch.caseMap[cf.id] = serverCaseId || cf.id;
+            UIStore.save(store);
+            return cf;
+          } catch (_err){
+            return local.createCasefile(payload);
+          }
         },
         getU01(){
           const store = UIStore.load();
@@ -1450,12 +1522,12 @@
       });
     });
 
-    btnCreate.addEventListener("click", () => {
+    btnCreate.addEventListener("click", async () => {
       const role = inputRole.value.trim();
       const company = inputCompany.value.trim();
       const mode = modalBackdrop.dataset.mode || "manual";
       const serverCaseId = modalBackdrop.dataset.serverCaseId || "";
-      const cf = DataAdapter.createCasefile({ role, company, stage: "screen" });
+      const cf = await DataAdapter.createCasefile({ role, company, stage: "screen" });
       if (mode === "server" && serverCaseId){
         const storeSnapshot = ensureOrchStore();
         const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
@@ -1464,7 +1536,10 @@
         storeSnapshot.orch = orch;
         UIStore.save(storeSnapshot);
       }
-      state.casefiles = DataAdapter.listCasefilesByStage();
+      const refreshed = await refreshCasefiles();
+      if (cf && cf.id && !refreshed.some((c) => c.id === cf.id)){
+        state.casefiles = [...refreshed, cf];
+      }
       closeModal();
       render();
       setActive(cf.id);
@@ -1491,6 +1566,14 @@
       document.querySelectorAll(".case-link").forEach(btn => btn.classList.remove("active"));
       const activeBtn = document.querySelector(`.case-link[data-id="${caseId}"]`);
       if (activeBtn) activeBtn.classList.add("active");
+    }
+
+    async function refreshCasefiles(){
+      const result = DataAdapter.listCasefilesByStage();
+      const list = (result && typeof result.then === "function") ? await result : result;
+      const casefiles = Array.isArray(list) ? list : [];
+      state.casefiles = casefiles;
+      return casefiles;
     }
 
     // Render case lists by stage + counts
@@ -2066,7 +2149,7 @@
       hydrateProfileCard();
 
       // Initial render
-      state.casefiles = DataAdapter.listCasefilesByStage();
+      await refreshCasefiles();
       render();
       const lastActive = DataAdapter.getActiveCasefile();
       const activeExists = lastActive && state.casefiles.some(c => c.id === lastActive);
