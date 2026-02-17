@@ -16,28 +16,16 @@
 </head>
 <body data-page="landing">
   <!--
-    Integration Notes (Landing)
-    - Sign in routes to /auth
-    - Request access uses mailto (no backend)
+    Landing: orientation + two entry paths.
+    - New users: onboarding -> casefile_new -> app
+    - Returning users: app
   -->
   <div class="wrap">
     <div class="page">
-                  <header class="page-header">
+      <header class="page-header">
         <div class="brand large">
-          <div class="brand-menu">
-            <button class="brand-logo" type="button" aria-label="Open navigation">
-              <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
-            </button>
-            <div class="brand-panel" role="menu">
-
-          <a href="landing.html" role="menuitem">Landing</a>
-          <a href="auth.html" role="menuitem">Auth</a>
-          <a href="onboarding.html" role="menuitem">Onboarding</a>
-          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
-          <a href="app.html" role="menuitem">App</a>
-          <a href="settings.html" role="menuitem">Settings</a>
-          <a href="feedback.html" role="menuitem">Feedback</a>
-            </div>
+          <div class="brand-logo" aria-hidden="true">
+            <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
           </div>
           <span class="brand-name">SignalBench</span>
         </div>
@@ -45,45 +33,63 @@
 
       <main class="page-body">
         <section class="card">
-          <h1 class="title">Decision‑Grade Career Signal Evaluation</h1>
+          <h1 class="title">We welcome you to Beta1 of the Interview Operating System</h1>
           <p class="subtitle">
-            SignalBench is designed to help professionals evaluate opportunities more clearly—before, during,
-            and after interviews—by surfacing risk, alignment, and decision signals that are often missed or
-            misinterpreted.
+            Thanks for being part of the private beta. This environment is evolving quickly, so expect occasional
+            changes. Your feedback helps us improve the experience.
           </p>
+          <div class="note" style="margin-top:12px;">
+            <strong>Announcements</strong>
+            <ul style="margin:8px 0 0 16px;">
+              <li>2026-02-16: Casefiles now persist across logins. Phantom pills fixed.</li>
+              <li>2026-02-15: Storybook auto-save added for answers to system questions.</li>
+              <li>2026-02-14: Cloudflare Access + new onboarding flow enabled.</li>
+            </ul>
+          </div>
         </section>
 
         <section class="card">
-          <div class="row">
-            <a class="btn primary" href="auth.html">Sign in</a>
-            <a
-              class="btn"
-              href="mailto:signal-bench@outlook.com?subject=Requesting%20access%20to%20SignalBench%20private%20beta&body=Name%3A%0AEmail%3A%0AHow%20did%20you%20hear%20about%20SignalBench%3F%0AWere%20you%20referred%3F%20If%20yes%2C%20by%20whom%3F%0ARole%20%2F%20seniority%3A%0AWhat%20kind%20of%20roles%20are%20you%20evaluating%20right%20now%3F%0ATell%20us%20a%20bit%20about%20yourself%20and%20what%20you%E2%80%99re%20hoping%20to%20get%20from%20SignalBench%3A"
-            >Request access</a>
+          <h2 class="title" style="font-size:20px;">New here? Let's get started.</h2>
+          <p class="subtitle">
+            You'll move through three quick screens to get set up:
+          </p>
+          <ol style="margin:8px 0 0 18px; color:var(--muted); font-size:var(--fs-14);">
+            <li>First is onboarding, where you add your resume and basic profile details.</li>
+            <li>Next is casefile setup, where you enter a target role and job description.</li>
+            <li>Then you'll land in the app, where Interview.OS guides screening and prep.</li>
+          </ol>
+          <div class="row" style="margin-top:16px;">
+            <a class="btn primary" href="onboarding.html">I'm New - Start Onboarding</a>
           </div>
-          <p class="note">If you already have access, sign in to continue onboarding or open your active casefile.</p>
+        </section>
+
+        <section class="card">
+          <h2 class="title" style="font-size:20px;">Returning? Continue where you left off.</h2>
+          <p class="subtitle">
+            If you already completed onboarding, jump straight back into your casefiles. You should see your
+            previous casefiles and your settings should carry over in this session.
+          </p>
+          <div class="row" style="margin-top:16px;">
+            <a class="btn" href="app.html">I'm Returning - Open App</a>
+          </div>
         </section>
       </main>
     </div>
   </div>
 
-
-  <script>
-    document.querySelectorAll(".brand-menu").forEach((menu) => {
-      const trigger = menu.querySelector(".brand-logo");
-      if (!trigger) return;
-      trigger.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        menu.classList.toggle("open");
-      });
-    });
-    document.addEventListener("click", (e) => {
-      document.querySelectorAll(".brand-menu.open").forEach((menu) => {
-        if (!menu.contains(e.target)) menu.classList.remove("open");
-      });
-    });
-  </script>
+  <style>
+    .btn:active,
+    .btn:focus{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .btn.primary:active,
+    .btn.primary:focus{
+      background:#fff;
+      color:var(--accent);
+      border-color:var(--accent);
+    }
+  </style>
 </body>
 </html>
-

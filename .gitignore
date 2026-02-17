@@ -1,0 +1,4 @@
+# Ignore archived pages (not deployed)
+archive/
+auth.html
+demo_router.html

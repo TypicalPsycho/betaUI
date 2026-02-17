@@ -36,9 +36,12 @@
     const hasU01 = !!store.u01;
     const hasCasefiles = Array.isArray(store.casefiles) && store.casefiles.length > 0;
 
-    if (page === "auth" || page === "landing"){
-      if (!hasU01) redirect("onboarding.html");
-      else redirect("app.html");
+    if (page === "auth"){
+      redirect("landing.html");
+      return;
+    }
+
+    if (page === "landing"){
       return;
     }
 
