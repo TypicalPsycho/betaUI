@@ -74,7 +74,7 @@
           <div style="margin-top:14px;">
             <label class="field">
               <span>Upload job description (required)</span>
-              <input id="jdFile" type="file" />
+              <input id="jdFile" type="file" accept=".pdf,.docx,.txt" />
             </label>
             <div class="note" style="margin:8px 0;">OR</div>
             <label class="field">
@@ -138,6 +138,23 @@
       }
       return data;
     };
+    const extractText = async (file) => {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/extract_text`, {
+        method: "POST",
+        credentials: "include",
+        body: form
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
 
     const hasJD = () => {
       return (jdFile.files && jdFile.files.length > 0) || jdText.value.trim().length > 0;
@@ -153,6 +170,20 @@
     [companyName, jobTitle, jdFile, jdText].forEach((el) => {
       el.addEventListener("input", updateState);
       el.addEventListener("change", updateState);
+    });
+    jdFile.addEventListener("change", async (e) => {
+      updateState();
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try{
+        btnCreate.disabled = true;
+        const data = await extractText(file);
+        jdText.value = data.text || "";
+      } catch (err){
+        alert(err?.message || "Could not read that file. Please try a PDF, DOCX, or TXT.");
+      } finally {
+        updateState();
+      }
     });
 
     btnCreate.addEventListener("click", async () => {

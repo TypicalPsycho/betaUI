@@ -79,7 +79,7 @@
           <h2 class="title" style="font-size:22px;">Resume upload</h2>
           <label class="field">
             <span>Upload resume (PDF/DOCX/TXT)</span>
-            <input type="file" />
+            <input id="resumeFile" type="file" accept=".pdf,.docx,.txt" />
           </label>
           <div class="note" style="margin:8px 0;">OR</div>
           <label class="field">
@@ -167,7 +167,7 @@
     const lengthSlider = document.getElementById("lengthSlider");
     const levelChecks = Array.from(document.querySelectorAll("input[name='level']"));
     const statusRadios = Array.from(document.querySelectorAll("input[name='status']"));
-    const resumeFile = document.querySelector("input[type='file']");
+    const resumeFile = document.getElementById("resumeFile");
     const resumeText = document.querySelector("textarea");
     const fullName = document.querySelector("input[placeholder='Full name']");
     const preferredName = document.querySelector("input[placeholder='Preferred name']");
@@ -182,6 +182,23 @@
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+    const extractText = async (file) => {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/extract_text`, {
+        method: "POST",
+        credentials: "include",
+        body: form
       });
       const text = await res.text();
       let data = {};
@@ -254,7 +271,20 @@
     consentBox.addEventListener("change", updateState);
     toneSlider.addEventListener("input", updateState);
     lengthSlider.addEventListener("input", updateState);
-    resumeFile.addEventListener("change", updateState);
+    resumeFile.addEventListener("change", async (e) => {
+      updateState();
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try{
+        btn.disabled = true;
+        const data = await extractText(file);
+        resumeText.value = data.text || "";
+      } catch (err){
+        alert(err?.message || "Could not read that file. Please try a PDF, DOCX, or TXT.");
+      } finally {
+        updateState();
+      }
+    });
     resumeText.addEventListener("input", updateState);
     fullName.addEventListener("input", updateState);
 
