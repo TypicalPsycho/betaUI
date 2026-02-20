@@ -25,18 +25,8 @@
     <div class="page">
                   <header class="page-header">
         <div class="brand large">
-          <div class="brand-menu">
-            <button class="brand-logo" type="button" aria-label="Open navigation">
-              <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
-            </button>
-            <div class="brand-panel" role="menu">
-
-          <a href="onboarding.html" role="menuitem">Onboarding</a>
-          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
-          <a href="app.html" role="menuitem">App</a>
-          <a href="settings.html" role="menuitem">Settings</a>
-          <a href="feedback.html" role="menuitem">Feedback</a>
-            </div>
+          <div class="brand-logo" aria-hidden="true">
+            <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
           </div>
           <span class="brand-name">SignalBench</span>
         </div>
@@ -69,7 +59,7 @@
           <div class="row" style="align-items:center; gap:12px; justify-content:flex-start;">
             <label class="field" style="max-width:360px;">
               <span>Profile image (optional)</span>
-              <input id="profileImage" type="file" accept="image/*" />
+              <input id="profileImage" type="file" accept=".png,.jpg,.jpeg,.webp" />
             </label>
             <div class="avatar" id="profilePreview" aria-label="Profile image preview"></div>
           </div>
@@ -223,10 +213,21 @@
       profilePreview.style.color = "var(--muted)";
     }
 
+    const isHeic = (file) => {
+      const name = (file?.name || "").toLowerCase();
+      const type = (file?.type || "").toLowerCase();
+      return name.endsWith(".heic") || name.endsWith(".heif") || type.includes("heic") || type.includes("heif");
+    };
+
     if (profileImage){
       profileImage.addEventListener("change", (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file || !profilePreview) return;
+        if (isHeic(file)){
+          alert("HEIC images are not supported yet. Please upload a JPG, PNG, or WebP.");
+          profileImage.value = "";
+          return;
+        }
         const reader = new FileReader();
         reader.onload = () => {
           profilePreview.innerHTML = "";
@@ -307,6 +308,7 @@
         full_name: fullName.value.trim(),
         preferred_name: preferredName?.value.trim() || "",
         resume_text: resumeText.value.trim(),
+        avatar_data_url: profileImageData || "",
         consent: consentBox.checked
       };
       const prefPayload = {
@@ -330,21 +332,6 @@
   </script>
 
 
-  <script>
-    document.querySelectorAll(".brand-menu").forEach((menu) => {
-      const trigger = menu.querySelector(".brand-logo");
-      if (!trigger) return;
-      trigger.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        menu.classList.toggle("open");
-      });
-    });
-    document.addEventListener("click", (e) => {
-      document.querySelectorAll(".brand-menu.open").forEach((menu) => {
-        if (!menu.contains(e.target)) menu.classList.remove("open");
-      });
-    });
-  </script>
+  
 </body>
 </html>

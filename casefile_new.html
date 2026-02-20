@@ -26,18 +26,8 @@
     <div class="page">
                   <header class="page-header">
         <div class="brand large">
-          <div class="brand-menu">
-            <button class="brand-logo" type="button" aria-label="Open navigation">
-              <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
-            </button>
-            <div class="brand-panel" role="menu">
-
-          <a href="onboarding.html" role="menuitem">Onboarding</a>
-          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
-          <a href="app.html" role="menuitem">App</a>
-          <a href="settings.html" role="menuitem">Settings</a>
-          <a href="feedback.html" role="menuitem">Feedback</a>
-            </div>
+          <div class="brand-logo" aria-hidden="true">
+            <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
           </div>
           <span class="brand-name">SignalBench</span>
         </div>
@@ -105,8 +95,8 @@
 
         <section class="card">
           <div class="row">
-            <button class="btn primary" id="btnCreateCasefile" type="button" disabled>Create Casefile</button>
-            <button class="btn" id="btnSkipCasefile" type="button">Skip Casefile Creation</button>
+            <button class="btn primary press-invert" id="btnCreateCasefile" type="button" disabled>Create Casefile</button>
+            <button class="btn press-invert" id="btnSkipCasefile" type="button">Skip Casefile Creation</button>
           </div>
         </section>
       </main>
@@ -242,22 +232,18 @@
     });
   </script>
 
-
-  <script>
-    document.querySelectorAll(".brand-menu").forEach((menu) => {
-      const trigger = menu.querySelector(".brand-logo");
-      if (!trigger) return;
-      trigger.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        menu.classList.toggle("open");
-      });
-    });
-    document.addEventListener("click", (e) => {
-      document.querySelectorAll(".brand-menu.open").forEach((menu) => {
-        if (!menu.contains(e.target)) menu.classList.remove("open");
-      });
-    });
-  </script>
+  <style>
+    .press-invert:active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .press-invert.primary:active{
+      background:#fff;
+      color:var(--accent);
+      border-color:var(--accent);
+    }
+  </style>
+  
 </body>
 </html>

@@ -36,12 +36,9 @@
               <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
             </button>
             <div class="brand-panel" role="menu">
-
-          <a href="onboarding.html" role="menuitem">Onboarding</a>
-          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
-          <a href="app.html" role="menuitem">App</a>
-          <a href="settings.html" role="menuitem">Settings</a>
-          <a href="feedback.html" role="menuitem">Feedback</a>
+              <a href="app.html" role="menuitem">App</a>
+              <a href="settings.html" role="menuitem">Settings</a>
+              <a href="feedback.html" role="menuitem">Feedback</a>
             </div>
           </div>
           <span class="brand-name">SignalBench</span>
@@ -147,9 +144,9 @@
 
         <section class="card">
           <div class="row">
-            <button class="btn primary" id="btnSubmit" type="button">Submit feedback</button>
-            <button class="btn" id="btnCancel" type="button">Do not submit</button>
-            <a class="btn mailto" href="mailto:signal-bench@outlook.com?subject=Beta%20feedback%20on%20Signal-Bench%20from%20%5Busername%5D">Do not submit, send an email instead</a>
+            <button class="btn primary press-invert" id="btnSubmit" type="button">Submit feedback</button>
+            <button class="btn press-invert" id="btnCancel" type="button">Do not submit</button>
+            <a class="btn mailto press-invert" href="mailto:signal-bench@outlook.com?subject=Beta%20feedback%20on%20Signal-Bench%20from%20%5Busername%5D">Do not submit, send an email instead</a>
           </div>
         </section>
       </main>
@@ -236,5 +233,18 @@
       });
     });
   </script>
+
+  <style>
+    .press-invert:active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .press-invert.primary:active{
+      background:#fff;
+      color:var(--accent);
+      border-color:var(--accent);
+    }
+  </style>
 </body>
 </html>

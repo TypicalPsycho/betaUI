@@ -18,7 +18,6 @@
   <!--
     Integration Notes (Settings)
     - Save preferences: tone, length, career level, employment status
-    - Account controls: logout, delete (confirm text required)
     - Route back to /app
   -->
   <div class="wrap">
@@ -30,12 +29,9 @@
               <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
             </button>
             <div class="brand-panel" role="menu">
-
-          <a href="onboarding.html" role="menuitem">Onboarding</a>
-          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
-          <a href="app.html" role="menuitem">App</a>
-          <a href="settings.html" role="menuitem">Settings</a>
-          <a href="feedback.html" role="menuitem">Feedback</a>
+              <a href="app.html" role="menuitem">App</a>
+              <a href="settings.html" role="menuitem">Settings</a>
+              <a href="feedback.html" role="menuitem">Feedback</a>
             </div>
           </div>
           <span class="brand-name">SignalBench</span>
@@ -101,37 +97,10 @@
           </div>
         </section>
 
-        <section class="card danger">
-          <h2 class="title" style="font-size:22px;">Delete account</h2>
-          <p class="note">This action is irreversible. All system data will be permanently deleted and cannot be recovered.</p>
-          <label class="field" style="margin-top:8px;">
-            <span>Type DELETE MY ACCOUNT to confirm</span>
-            <input type="text" id="deleteConfirm" placeholder="DELETE MY ACCOUNT" />
-          </label>
-          <div class="row" style="margin-top:12px;">
-            <button class="btn danger" id="deleteBtn" type="button" disabled>Delete account</button>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2 class="title" style="font-size:22px;">Account Controls</h2>
-          <div class="row">
-            <button class="btn" id="btnLogout" type="button">Logout</button>
-          </div>
-        </section>
-
         <section class="card">
           <div class="row">
-            <button class="btn primary" id="btnSaveSettings" type="button">Save Settings</button>
-            <a class="btn" href="app.html">Return to App without Saving</a>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2 class="title" style="font-size:22px;">Demo tools</h2>
-          <div class="row">
-            <button class="btn" id="btnLoadDemo" type="button">Load demo data</button>
-            <button class="btn" id="btnClearDemo" type="button">Clear demo data</button>
+            <button class="btn primary press-invert" id="btnSaveSettings" type="button">Save Settings</button>
+            <a class="btn press-invert" href="app.html">Return to App without Saving</a>
           </div>
         </section>
       </main>
@@ -139,12 +108,7 @@
   </div>
 
   <script>
-    const input = document.getElementById("deleteConfirm");
-    const btn = document.getElementById("deleteBtn");
     const btnSave = document.getElementById("btnSaveSettings");
-    const btnLoad = document.getElementById("btnLoadDemo");
-    const btnClear = document.getElementById("btnClearDemo");
-    const btnLogout = document.getElementById("btnLogout");
     const toneSlider = document.getElementById("toneSlider");
     const lengthSlider = document.getElementById("lengthSlider");
     const themeRadios = Array.from(document.querySelectorAll("input[name='theme']"));
@@ -212,10 +176,6 @@
     hydratePrefs();
     const themeKey = localStorage.getItem("sb.ui.theme") || "editorial";
     themeRadios.forEach((r) => r.checked = r.value === themeKey);
-    input.addEventListener("input", () => {
-      btn.disabled = input.value.trim() !== "DELETE MY ACCOUNT";
-    });
-    btn.addEventListener("click", () => alert("Delete account (stub)"));
     btnSave.addEventListener("click", async () => {
       const store = UIStore.load();
       const payload = {
@@ -240,23 +200,6 @@
       localStorage.setItem("sb.ui.theme", r.value);
       UITheme.applyTheme(r.value);
     }));
-    btnLoad.addEventListener("click", () => {
-      UIStore.seed();
-      window.location.reload();
-    });
-    btnClear.addEventListener("click", () => {
-      UIStore.clear();
-      window.location.reload();
-    });
-    if (btnLogout){
-      btnLogout.addEventListener("click", () => {
-        const store = UIStore.load();
-        store.auth = { ...(store.auth || {}), isAuthed: false };
-        UIStore.save(store);
-        const hasU01 = !!store.u01;
-        window.location.href = hasU01 ? "app.html" : "onboarding.html";
-      });
-    }
   </script>
 
 
@@ -276,5 +219,23 @@
       });
     });
   </script>
+
+  <style>
+    .press-invert:active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .press-invert.primary:active{
+      background:#fff;
+      color:var(--accent);
+      border-color:var(--accent);
+    }
+    .press-invert.danger:active{
+      background:#fff;
+      color:#b3261e;
+      border-color:#b3261e;
+    }
+  </style>
 </body>
 </html>

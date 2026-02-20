@@ -388,6 +388,7 @@
       gap:10px;
       align-items:center;
       justify-content:flex-start;
+      position:relative;
     }
     .avatar{
       width:44px;height:44px;border-radius:50%;
@@ -406,22 +407,13 @@
     }
     .pc-tier{font-weight:700;color:var(--muted)}
     .pc-gear-wrap{
-      position:relative;
+      position:static;
       margin-left:auto;
     }
-    .pc-gear{
-      width:32px;height:32px;border-radius:999px;
-      border:1px solid var(--soft);
-      background:#fff;
-      display:grid; place-items:center;
-      cursor:pointer;
-      padding:0;
-    }
-    .pc-gear:hover{background:var(--panel)}
     .pc-menu{
       position:absolute;
-      left:0;
-      bottom:40px;
+      left:12px;
+      bottom:calc(100% + 6px);
       display:none;
       flex-direction:column;
       gap:6px;
@@ -432,6 +424,22 @@
       box-shadow:0 10px 24px rgba(29,35,42,.12);
       min-width:160px;
       z-index:20;
+    }
+    .brand-panel .menu-divider{
+      height:1px;
+      background:var(--soft);
+      margin:4px 0;
+      width:100%;
+    }
+    .brand-panel button,
+    .brand-panel a{
+      background:transparent; border:none; padding:0; cursor:pointer; font:inherit;
+      color:#111; display:flex; gap:6px; align-items:center;
+      text-align:left;
+      font-size:var(--fs-14);
+      font-weight:600;
+      font-family:var(--sans);
+      text-decoration:none;
     }
     .pc-gear-wrap.open .pc-menu{
       display:flex;
@@ -447,6 +455,12 @@
       text-decoration:none;
       
     }
+    .pc-menu .menu-divider{
+      height:1px;
+      background:var(--soft);
+      margin:4px 0;
+      width:100%;
+    }
     .pc-menu button.active{
       font-weight:800;
     }
@@ -454,6 +468,7 @@
       display:flex;
       gap:10px;
       align-items:center;
+      cursor:pointer;
     }
     .case-link:focus-visible,
     .compass-pill:focus-visible,
@@ -855,11 +870,12 @@
                 <img src="icons/logo1_round_44.png" alt="SignalBench logo" />
               </button>
               <div class="brand-panel" role="menu">
-                <a href="onboarding.html" role="menuitem">Onboarding</a>
-                <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
                 <a href="app.html" role="menuitem">App</a>
                 <a href="settings.html" role="menuitem">Settings</a>
                 <a href="feedback.html" role="menuitem">Feedback</a>
+                <div class="menu-divider" role="separator"></div>
+                <button id="btnProfileMenu" type="button" role="menuitem">My Profile</button>
+                <button id="btnStoryMenu" type="button" role="menuitem">My Storybook</button>
               </div>
             </div>
             <span>SignalBench</span>
@@ -921,7 +937,7 @@
         <div class="profile-card">
           <div class="pc-user">
             <div class="avatar">
-              <img id="profileAvatar" src="icons/newuser.jpg" alt="User avatar" />
+              <img id="profileAvatar" src="icons/avatar_default.svg" alt="User avatar" />
             </div>
             <div class="pc-meta">
               <div class="pc-name" id="profileName">New User</div>
@@ -929,17 +945,13 @@
             </div>
           </div>
           <div class="pc-gear-wrap">
-            <button class="pc-gear" type="button" aria-label="Open menu">
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path>
-              </svg>
-            </button>
             <div class="pc-menu" role="menu" aria-label="Profile menu">
-              <button id="btnProfile" type="button" role="menuitem">Profile</button>
-              <button id="btnStory" type="button" role="menuitem">Storybook</button>
+              <a href="app.html" role="menuitem">App</a>
               <a href="settings.html" role="menuitem">Settings</a>
               <a href="feedback.html" role="menuitem">Feedback</a>
+              <div class="menu-divider" role="separator"></div>
+              <button id="btnProfile" type="button" role="menuitem">My Profile</button>
+              <button id="btnStory" type="button" role="menuitem">My Storybook</button>
             </div>
           </div>
         </div>
@@ -1479,16 +1491,24 @@
       });
     }
 
-    el("btnProfile").addEventListener("click", () => setView("profile"));
-    el("btnStory").addEventListener("click", () => setView("storybook"));
     const btnProfile = el("btnProfile");
     const btnStory = el("btnStory");
+    const btnProfileMenu = el("btnProfileMenu");
+    const btnStoryMenu = el("btnStoryMenu");
+    btnProfile.addEventListener("click", () => setView("profile"));
+    btnStory.addEventListener("click", () => setView("storybook"));
+    if (btnProfileMenu){
+      btnProfileMenu.addEventListener("click", () => setView("profile"));
+    }
+    if (btnStoryMenu){
+      btnStoryMenu.addEventListener("click", () => setView("storybook"));
+    }
     const gearWrap = document.querySelector(".pc-gear-wrap");
-    const gearBtn = document.querySelector(".pc-gear");
+    const profileTrigger = document.querySelector(".pc-user");
     const brandMenus = document.querySelectorAll(".brand-menu");
 
-    if (gearBtn && gearWrap){
-      gearBtn.addEventListener("click", (e) => {
+    if (profileTrigger && gearWrap){
+      profileTrigger.addEventListener("click", (e) => {
         e.stopPropagation();
         gearWrap.classList.toggle("open");
       });
@@ -1910,8 +1930,8 @@
     function renderBlockMarkdown(text){
       const lines = text.split("\n");
       let html = "";
-      let inUl = false;
-      let inOl = false;
+      let listType = null; // "ul" | "ol"
+      let listItemOpen = false;
       let inCode = false;
       let paragraph = [];
 
@@ -1921,16 +1941,29 @@
           paragraph = [];
         }
       };
-      const closeLists = () => {
-        if (inUl){ html += "</ul>"; inUl = false; }
-        if (inOl){ html += "</ol>"; inOl = false; }
+      const closeList = () => {
+        if (listItemOpen){
+          html += "</li>";
+          listItemOpen = false;
+        }
+        if (listType){
+          html += `</${listType}>`;
+          listType = null;
+        }
+      };
+      const openList = (type) => {
+        if (listType !== type){
+          closeList();
+          html += `<${type}>`;
+          listType = type;
+        }
       };
 
       for (const rawLine of lines){
         const line = rawLine.trimEnd();
         if (line.startsWith("```")){
           flushParagraph();
-          closeLists();
+          closeList();
           if (!inCode){
             html += "<pre><code>";
             inCode = true;
@@ -1947,25 +1980,34 @@
 
         if (!line.trim()){
           flushParagraph();
-          closeLists();
+          if (listItemOpen){
+            html += "<br>";
+          }
+          continue;
+        }
+
+        if (/^---+$/.test(line.trim())){
+          flushParagraph();
+          closeList();
+          html += "<hr />";
           continue;
         }
 
         if (line.startsWith("### ")){
           flushParagraph();
-          closeLists();
+          closeList();
           html += `<h3>${line.slice(4)}</h3>`;
           continue;
         }
         if (line.startsWith("## ")){
           flushParagraph();
-          closeLists();
+          closeList();
           html += `<h2>${line.slice(3)}</h2>`;
           continue;
         }
         if (line.startsWith("# ")){
           flushParagraph();
-          closeLists();
+          closeList();
           html += `<h1>${line.slice(2)}</h1>`;
           continue;
         }
@@ -1973,26 +2015,36 @@
         const ulMatch = line.match(/^[-*]\s+(.*)/);
         if (ulMatch){
           flushParagraph();
-          if (inOl){ html += "</ol>"; inOl = false; }
-          if (!inUl){ html += "<ul>"; inUl = true; }
-          html += `<li>${ulMatch[1]}</li>`;
+          if (listType === "ol" && listItemOpen){
+            html += `<div>&bull; ${ulMatch[1]}</div>`;
+          } else {
+            openList("ul");
+            if (listItemOpen) html += "</li>";
+            html += `<li>${ulMatch[1]}`;
+            listItemOpen = true;
+          }
           continue;
         }
 
         const olMatch = line.match(/^\d+\.\s+(.*)/);
         if (olMatch){
           flushParagraph();
-          if (inUl){ html += "</ul>"; inUl = false; }
-          if (!inOl){ html += "<ol>"; inOl = true; }
-          html += `<li>${olMatch[1]}</li>`;
+          openList("ol");
+          if (listItemOpen) html += "</li>";
+          html += `<li>${olMatch[1]}`;
+          listItemOpen = true;
           continue;
         }
 
-        paragraph.push(line);
+        if (listType && listItemOpen){
+          html += `<div>${line}</div>`;
+        } else {
+          paragraph.push(line);
+        }
       }
 
       flushParagraph();
-      closeLists();
+      closeList();
       if (inCode) html += "</code></pre>";
       return html;
     }
@@ -2190,6 +2242,7 @@
         if (content.full_name) store.me.full_name = content.full_name;
         if (content.preferred_name) store.me.preferred_name = content.preferred_name;
         if (content.email) store.me.email = content.email;
+        if (content.avatar_data_url) store.me.avatar_data_url = content.avatar_data_url;
         UIStore.save(store);
       } catch (_err){
         // noop
