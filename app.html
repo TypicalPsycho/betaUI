@@ -877,7 +877,7 @@
                 <img src="icons/logo1_round_44.png" alt="SignalBench logo" />
               </button>
               <div class="brand-panel" role="menu">
-              <a href="app.html" role="menuitem">App</a>
+              <a href="help.html" role="menuitem" target="_blank" rel="noopener noreferrer">Help</a>
               <a href="settings.html" role="menuitem">Settings</a>
               <a href="feedback.html" role="menuitem">Feedback</a>
               <div class="menu-divider" role="separator"></div>
@@ -903,7 +903,7 @@
 
           <details class="stage" open data-stage="validate">
             <summary>
-              <span>Validate</span>
+              <span>Pursue</span>
               <span class="count" id="count-validate">0</span>
             </summary>
             <ul class="case-list" id="list-validate"></ul>
@@ -911,7 +911,7 @@
 
           <details class="stage" open data-stage="prepare">
             <summary>
-              <span>Prepare</span>
+              <span>Interview</span>
               <span class="count" id="count-prepare">0</span>
             </summary>
             <ul class="case-list" id="list-prepare"></ul>
@@ -919,7 +919,7 @@
 
           <details class="stage" open data-stage="advance">
             <summary>
-              <span>Advance</span>
+              <span>Offer</span>
               <span class="count" id="count-advance">0</span>
             </summary>
             <ul class="case-list" id="list-advance"></ul>
@@ -927,7 +927,7 @@
 
           <details class="stage" open data-stage="launch">
             <summary>
-              <span>Launch</span>
+              <span>Transition</span>
               <span class="count" id="count-launch">0</span>
             </summary>
             <ul class="case-list" id="list-launch"></ul>
@@ -935,7 +935,7 @@
 
           <details class="stage" open data-stage="closed">
             <summary>
-              <span>Closed</span>
+              <span>Close</span>
               <span class="count" id="count-closed">0</span>
             </summary>
             <ul class="case-list" id="list-closed"></ul>
@@ -954,7 +954,7 @@
           </div>
           <div class="pc-gear-wrap">
             <div class="pc-menu" role="menu" aria-label="Profile menu">
-              <a href="app.html" role="menuitem">App</a>
+              <a href="help.html" role="menuitem" target="_blank" rel="noopener noreferrer">Help</a>
               <a href="settings.html" role="menuitem">Settings</a>
               <a href="feedback.html" role="menuitem">Feedback</a>
               <div class="menu-divider" role="separator"></div>
@@ -1854,11 +1854,11 @@
     function stageLabel(stage){
       const map = {
         screen: "Screen",
-        validate: "Validate",
-        prepare: "Prepare",
-        advance: "Advance",
-        launch: "Launch",
-        closed: "Closed"
+        validate: "Pursue",
+        prepare: "Interview",
+        advance: "Offer",
+        launch: "Transition",
+        closed: "Close"
       };
       return map[stage] || "Screen";
     }
@@ -2110,11 +2110,11 @@
     function stageToState(stage){
       const map = {
         Screen: "BUILDCASE",
-        Validate: "JUDGEROLE",
-        Prepare: "SIGNALTUNE",
-        Advance: "CAPTUREDEBRIEF",
-        Launch: "NEGOTIATE",
-        Closed: "JUMPSTART"
+        Pursue: "JUDGEROLE",
+        Interview: "SIGNALTUNE",
+        Offer: "CAPTUREDEBRIEF",
+        Transition: "NEGOTIATE",
+        Close: "JUMPSTART"
       };
       return map[stage] || "BUILDCASE";
     }
