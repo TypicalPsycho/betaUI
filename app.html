@@ -261,6 +261,9 @@
     [data-theme="batman"] .compass-top .right{
       color:#fff;
     }
+    [data-theme="batman"] .compass-top .compass-meta{
+      color:#d6d6d6;
+    }
     [data-theme="batman"] .compass-actions{
       color:#000;
     }
@@ -704,6 +707,10 @@
       font-weight:600;
       font-size:var(--fs-14);
     }
+    .compass-top .compass-meta{
+      color:var(--muted);
+      font-weight:500;
+    }
     .compass-row{
       display:flex;
       gap:8px;
@@ -978,7 +985,7 @@
             <div class="compass" id="compass">
               <div class="compass-top">
                 <span id="compassActive">No active casefile selected</span>
-                <span class="right" id="compassStageMeta">Stage: —</span>
+                <span class="right compass-meta" id="compassStageMeta">System State: —</span>
               </div>
               <div class="compass-actions">
                 <span class="compass-label">Next, we can:</span>
@@ -1280,6 +1287,7 @@
       messages: [],
       noCaseReminderCount: 0,
       activeStage: "Screen",
+      systemState: null,
       intentKey: null,
       compass: {
         stage: "Screen",
@@ -1845,6 +1853,11 @@
       return map[stage] || "Screen";
     }
 
+    function formatSystemState(value){
+      if (!value) return "—";
+      return String(value).toUpperCase();
+    }
+
     function updateCompass(cf){
       const stageKey = cf?.stage || "screen";
       const config = COMPASS_CONFIG[stageKey] || COMPASS_CONFIG.screen;
@@ -1858,7 +1871,10 @@
       } else {
         if (compassActive) compassActive.textContent = `Active Casefile: ${cf.role}, ${cf.company}`;
       }
-      if (compassStageMeta) compassStageMeta.textContent = `Stage: ${stage} - ${config.goal}`;
+      const store = UIStore.load();
+      const stateMap = store.orch?.stateMap || {};
+      state.systemState = cf?.id ? (stateMap[cf.id] || null) : null;
+      if (compassStageMeta) compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
 
       state.compass = {
         stage,
@@ -2101,6 +2117,7 @@
       }
       if (!store.orch) store.orch = { userId: null, caseMap: {} };
       if (!store.orch.caseMap) store.orch.caseMap = {};
+      if (!store.orch.stateMap) store.orch.stateMap = {};
       UIStore.save(store);
       return store;
     }
@@ -2185,6 +2202,16 @@
           } else if (activeServerId && activeServerId !== serverCaseId){
             openModal({ mode: "server", serverCaseId });
             showToast("Name the new casefile so it appears in your list.");
+          }
+        }
+        if (resp && resp.state_executed){
+          orch.stateMap = orch.stateMap || {};
+          if (state.activeCaseId){
+            orch.stateMap[state.activeCaseId] = resp.state_executed;
+          }
+          state.systemState = resp.state_executed;
+          if (compassStageMeta){
+            compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
           }
         }
         storeSnapshot.orch = orch;
