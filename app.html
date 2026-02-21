@@ -870,13 +870,14 @@
                 <img src="icons/logo1_round_44.png" alt="SignalBench logo" />
               </button>
               <div class="brand-panel" role="menu">
-                <a href="app.html" role="menuitem">App</a>
-                <a href="settings.html" role="menuitem">Settings</a>
-                <a href="feedback.html" role="menuitem">Feedback</a>
-                <div class="menu-divider" role="separator"></div>
-                <button id="btnProfileMenu" type="button" role="menuitem">My Profile</button>
-                <button id="btnStoryMenu" type="button" role="menuitem">My Storybook</button>
-              </div>
+              <a href="app.html" role="menuitem">App</a>
+              <a href="settings.html" role="menuitem">Settings</a>
+              <a href="feedback.html" role="menuitem">Feedback</a>
+              <div class="menu-divider" role="separator"></div>
+              <button id="btnProfileMenu" type="button" role="menuitem">My Profile</button>
+              <button id="btnStoryMenu" type="button" role="menuitem">My Storybook</button>
+              <a href="https://signalbench.cloudflareaccess.com/cdn-cgi/access/logout" role="menuitem" data-logout="true">Logout</a>
+            </div>
             </div>
             <span>SignalBench</span>
           </div>
@@ -952,6 +953,7 @@
               <div class="menu-divider" role="separator"></div>
               <button id="btnProfile" type="button" role="menuitem">My Profile</button>
               <button id="btnStory" type="button" role="menuitem">My Storybook</button>
+              <a href="https://signalbench.cloudflareaccess.com/cdn-cgi/access/logout" role="menuitem" data-logout="true">Logout</a>
             </div>
           </div>
         </div>
@@ -1531,6 +1533,22 @@
       document.addEventListener("click", (e) => {
         document.querySelectorAll(".brand-menu.open").forEach((menu) => {
           if (!menu.contains(e.target)) menu.classList.remove("open");
+        });
+      });
+    }
+
+    const clearLocalUIState = () => {
+      try{
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("sb.ui.v1::"))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch (_err){}
+    };
+    const logoutLinks = document.querySelectorAll("[data-logout='true']");
+    if (logoutLinks.length){
+      logoutLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+          clearLocalUIState();
         });
       });
     }
