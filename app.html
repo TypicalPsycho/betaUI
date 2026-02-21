@@ -1261,6 +1261,16 @@
             return local.createCasefile(payload);
           }
         },
+        updateCasefileStage(caseId, stage){
+          const store = UIStore.load();
+          store.casefiles = store.casefiles || [];
+          const cf = store.casefiles.find(c => c.id === caseId);
+          if (cf){
+            cf.stage = stage;
+          }
+          UIStore.save(store);
+          return cf;
+        },
         getU01(){
           const store = UIStore.load();
           const userId = store.orch?.userId || store.me?.id || "";
@@ -2176,7 +2186,7 @@
         user_message: text,
         user_email: storeSnapshot.me?.email || null,
         user_id: orch.userId || storeSnapshot.me?.id || null,
-        case_id: orch.caseMap[state.activeCaseId] || null,
+        case_id: orch.caseMap[state.activeCaseId] || state.activeCaseId || null,
         selected_action_id: state.compass.selectedStepLabel || null,
         user_intent: state.intentKey || null,
         client_state_hint: stageToState(state.activeStage)
