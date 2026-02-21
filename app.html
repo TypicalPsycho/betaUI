@@ -1177,6 +1177,16 @@
 
       return {
         ...local,
+        setActiveCasefile(caseId){
+          const store = UIStore.load();
+          store.activeCaseId = caseId;
+          UIStore.save(store);
+          return caseId;
+        },
+        getActiveCasefile(){
+          const store = UIStore.load();
+          return store.activeCaseId || null;
+        },
         sendTurn(payload){
           return postJson("/turn", payload);
         },
