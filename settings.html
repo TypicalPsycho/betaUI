@@ -115,7 +115,7 @@
     const levelChecks = Array.from(document.querySelectorAll("input[name='level']"));
     const statusRadios = Array.from(document.querySelectorAll("input[name='status']"));
 
-    const API_BASE = "https://api.signal-bench.com";
+    const API_BASE = window.SB_API_BASE || "/api";
     const getJson = async (path) => {
       const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
       const text = await res.text();

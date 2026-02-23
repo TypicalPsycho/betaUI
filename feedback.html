@@ -165,7 +165,7 @@
       slider.addEventListener("input", updateMeta);
     });
 
-    const API_BASE = "https://api.signal-bench.com";
+    const API_BASE = window.SB_API_BASE || "/api";
     const postJson = async (path, payload) => {
       const res = await fetch(`${API_BASE}${path}`, {
         method: "POST",

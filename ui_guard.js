@@ -3,7 +3,7 @@
   const page = document.body?.dataset?.page;
   if (!page || !window.UIStore) return;
 
-  const API_BASE = "https://api.signal-bench.com";
+  const API_BASE = window.SB_API_BASE || "/api";
 
   const hydrateIdentity = async () => {
     try{
