@@ -2236,7 +2236,7 @@
         UIStore.save(storeSnapshot);
         assistantMsg.content = resp.assistant_message || "(empty response)";
       } catch (err){
-        assistantMsg.content = "Sorry, something went wrong sending this message. Error 1500.";
+        assistantMsg.content = "The system took too long to respond. Please try your prompt again. Error 1500.";
         showToast(err?.message || "Request failed.");
       } finally {
         typingEl.style.display = "none";
