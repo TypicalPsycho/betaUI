@@ -222,13 +222,13 @@
         if (jdPayload.jd_text){
           await postJson("/u03", jdPayload);
         }
-        window.location.href = "app.html";
+        window.location.href = "help.html";
       } catch (err){
         alert(err?.message || "Could not create casefile. Please try again.");
       }
     });
     btnSkip.addEventListener("click", () => {
-      window.location.href = "app.html";
+      window.location.href = "help.html";
     });
   </script>
 
