@@ -69,6 +69,10 @@
     }
 
     if (page === "landing"){
+      if (hasU01){
+        if (!hasCasefiles) redirect("casefile_new.html");
+        else redirect("app.html");
+      }
       return;
     }
 
