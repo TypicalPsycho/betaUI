@@ -1971,7 +1971,7 @@
         if (lastAssistant){
           const chatRect = chat.getBoundingClientRect();
           const msgRect = lastAssistant.getBoundingClientRect();
-          const targetTop = (msgRect.top - chatRect.top) + chat.scrollTop - 20;
+          const targetTop = (msgRect.top - chatRect.top) + chat.scrollTop - 100;
           chat.scrollTop = Math.max(0, targetTop);
         }
         state.scrollMode = null;
