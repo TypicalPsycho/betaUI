@@ -2283,6 +2283,108 @@ At all times, you control the pace, progress, and direction. The system provides
       }
     }
 
+    function applyTurnResponse(resp, storeSnapshot, assistantMsg, payload){
+      if (!resp) return;
+      const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
+      if (resp.user_id){
+        orch.userId = resp.user_id;
+      }
+      if (resp.case_id){
+        const serverCaseId = resp.case_id;
+        orch.caseMap = orch.caseMap || {};
+        const activeLocalId = state.activeCaseId;
+        const activeServerId = activeLocalId ? orch.caseMap[activeLocalId] : null;
+        const existingLocalId = Object.keys(orch.caseMap).find((key) => orch.caseMap[key] === serverCaseId);
+        if (existingLocalId){
+          if (existingLocalId !== activeLocalId){
+            setActive(existingLocalId);
+          }
+        } else if (!activeServerId && activeLocalId){
+          orch.caseMap[activeLocalId] = serverCaseId;
+        } else if (activeServerId && activeServerId !== serverCaseId){
+          openModal({ mode: "server", serverCaseId });
+          showToast("Name the new casefile so it appears in your list.");
+        }
+      }
+      if (resp.state_executed){
+        orch.stateMap = orch.stateMap || {};
+        if (state.activeCaseId){
+          orch.stateMap[state.activeCaseId] = resp.state_executed;
+        }
+        state.systemState = resp.state_executed;
+        if (compassStageMeta){
+          compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
+        }
+      }
+      storeSnapshot.orch = orch;
+      UIStore.save(storeSnapshot);
+      if (resp.assistant_message && assistantMsg){
+        assistantMsg.content = resp.assistant_message;
+      }
+    }
+
+    async function streamTurn(payload, onDelta){
+      const res = await fetch(`${API_BASE}/turn_stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+
+      const contentType = (res.headers.get("content-type") || "").toLowerCase();
+      if (!res.ok){
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+
+      if (!contentType.includes("text/event-stream") || !res.body){
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+        return data;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let donePayload = null;
+
+      while (true){
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf("\n\n")) !== -1){
+          const chunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const lines = chunk.split("\n");
+          let eventType = "";
+          const dataLines = [];
+          for (const line of lines){
+            if (line.startsWith("event:")){
+              eventType = line.slice(6).trim();
+            } else if (line.startsWith("data:")){
+              dataLines.push(line.slice(5).trim());
+            }
+          }
+          if (!eventType) continue;
+          const dataRaw = dataLines.join("\n");
+          let data = {};
+          try { data = dataRaw ? JSON.parse(dataRaw) : {}; } catch (_err){ data = { raw: dataRaw }; }
+          if (eventType === "delta"){
+            const delta = data?.delta || "";
+            if (delta && onDelta) onDelta(delta);
+          } else if (eventType === "done"){
+            donePayload = data;
+          }
+        }
+      }
+      return donePayload;
+    }
+
     async function sendMessage(text){
       if (!state.activeCaseId){
         const assistantMsg = {
@@ -2343,42 +2445,43 @@ At all times, you control the pace, progress, and direction. The system provides
       };
 
       try{
-        const resp = await DataAdapter.sendTurn(payload);
-        if (resp && resp.user_id){
-          orch.userId = resp.user_id;
-        }
-        if (resp && resp.case_id){
-          const serverCaseId = resp.case_id;
-          orch.caseMap = orch.caseMap || {};
-          const activeLocalId = state.activeCaseId;
-          const activeServerId = activeLocalId ? orch.caseMap[activeLocalId] : null;
-          const existingLocalId = Object.keys(orch.caseMap).find((key) => orch.caseMap[key] === serverCaseId);
-          if (existingLocalId){
-            if (existingLocalId !== activeLocalId){
-              setActive(existingLocalId);
-            }
-          } else if (!activeServerId && activeLocalId){
-            orch.caseMap[activeLocalId] = serverCaseId;
-          } else if (activeServerId && activeServerId !== serverCaseId){
-            openModal({ mode: "server", serverCaseId });
-            showToast("Name the new casefile so it appears in your list.");
+        let sawDelta = false;
+        let lastRender = 0;
+        const renderStreaming = (force=false) => {
+          const now = Date.now();
+          if (force || now - lastRender > 120){
+            state.scrollMode = "bottom";
+            renderMessages();
+            lastRender = now;
+          }
+        };
+        const onDelta = (delta) => {
+          if (!sawDelta){
+            sawDelta = true;
+            assistantMsg.content = "";
+          }
+          assistantMsg.content += delta;
+          renderStreaming();
+        };
+
+        let resp = null;
+        try{
+          resp = await streamTurn(payload, onDelta);
+        } catch (streamErr){
+          if (!sawDelta){
+            resp = await DataAdapter.sendTurn(payload);
+          } else {
+            throw streamErr;
           }
         }
-        if (resp && resp.state_executed){
-          orch.stateMap = orch.stateMap || {};
-          if (state.activeCaseId){
-            orch.stateMap[state.activeCaseId] = resp.state_executed;
-          }
-          state.systemState = resp.state_executed;
-          if (compassStageMeta){
-            compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
-          }
-        }
-        storeSnapshot.orch = orch;
-        UIStore.save(storeSnapshot);
-        assistantMsg.content = resp.assistant_message || "(empty response)";
+        applyTurnResponse(resp, storeSnapshot, assistantMsg, payload);
+        renderStreaming(true);
       } catch (err){
-        assistantMsg.content = "The system took too long to respond. Please try your prompt again. Error 1500.";
+        if (assistantMsg.content && assistantMsg.content !== "Thinking..."){
+          assistantMsg.content += "\n\nThe system took too long to respond. Please try your prompt again. Error 1500.";
+        } else {
+          assistantMsg.content = "The system took too long to respond. Please try your prompt again. Error 1500.";
+        }
         showToast(err?.message || "Request failed.");
       } finally {
         typingEl.style.display = "none";
