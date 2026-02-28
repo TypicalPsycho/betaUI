@@ -26,6 +26,33 @@
     }catch(_err){}
   };
 
+  const hydrateRemoteState = async () => {
+    try{
+      const store = UIStore.load();
+      const userId = store.orch?.userId || store.me?.id || null;
+      const userEmail = store.me?.email || null;
+      if (!userId && !userEmail) return;
+      const params = new URLSearchParams();
+      if (userId) params.set("user_id", userId);
+      else if (userEmail) params.set("user_email", userEmail);
+      const query = params.toString();
+      const [u01Res, caseRes] = await Promise.all([
+        fetch(`${API_BASE}/u01?${query}`, { credentials: "include" }),
+        fetch(`${API_BASE}/casefiles?${query}`, { credentials: "include" })
+      ]);
+      const next = UIStore.load();
+      if (u01Res.ok){
+        const u01Data = await u01Res.json();
+        if (u01Data?.u01) next.u01 = u01Data.u01;
+      }
+      if (caseRes.ok){
+        const caseData = await caseRes.json();
+        if (Array.isArray(caseData?.casefiles)) next.casefiles = caseData.casefiles;
+      }
+      UIStore.save(next);
+    }catch(_err){}
+  };
+
   const redirect = (target) => {
     if (!window.location.href.includes(target)) {
       window.location.href = target;
@@ -57,6 +84,10 @@
     }
   };
 
-  applyGuard(UIStore.load());
-  hydrateIdentity().then(() => applyGuard(UIStore.load()));
+  const bootstrap = async () => {
+    await hydrateIdentity();
+    await hydrateRemoteState();
+    applyGuard(UIStore.load());
+  };
+  bootstrap();
 })();
