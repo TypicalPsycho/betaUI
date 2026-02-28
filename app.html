@@ -1027,6 +1027,23 @@
           <input id="inputCompany" type="text" placeholder="e.g. Amazon" />
         </label>
       </div>
+      <div id="jdModalBlock">
+        <label class="field" style="margin-top:10px;">
+          <span>Company URL (optional, helps with company research)</span>
+          <input id="inputCompanyUrl" type="url" placeholder="https://company.com" />
+        </label>
+        <div style="margin-top:12px;">
+          <label class="field">
+            <span>Upload job description (required)</span>
+            <input id="inputJdFile" type="file" accept=".pdf,.docx,.txt" />
+          </label>
+          <div class="note" style="margin:8px 0;">OR</div>
+          <label class="field">
+            <span>Paste job description text (min 250 characters)</span>
+            <textarea id="inputJdText" placeholder="Paste JD text here"></textarea>
+          </label>
+        </div>
+      </div>
 
       <div class="modal-actions">
         <button class="action" id="btnCancel" type="button">Cancel</button>
@@ -1229,6 +1246,7 @@
           const store = UIStore.load();
           const role = payload?.role || "";
           const company = payload?.company || "";
+          const companyUrl = payload?.company_url || "";
           const stage = payload?.stage || "screen";
           const userId = store.orch?.userId || store.me?.id || null;
           const userEmail = store.me?.email || "";
@@ -1239,6 +1257,7 @@
             title,
             company_name: company,
             role_title: role,
+            company_url: companyUrl,
             stage
           };
           try{
@@ -1248,7 +1267,8 @@
               id: serverCaseId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
               role,
               company,
-              stage
+              stage,
+              companyUrl
             };
             store.casefiles = store.casefiles || [];
             store.casefiles.push(cf);
@@ -1260,6 +1280,23 @@
           } catch (_err){
             return local.createCasefile(payload);
           }
+        },
+        async createU03(caseId, payload){
+          const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || null;
+          const userEmail = store.me?.email || "";
+          const orch = store.orch || { caseMap: {} };
+          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          const jdPayload = {
+            user_id: userId,
+            user_email: userEmail,
+            case_id: serverCaseId,
+            jd_text: payload?.jd_text || "",
+            applied: payload?.applied || "",
+            interviewed: payload?.interviewed || ""
+          };
+          await postJson("/u03", jdPayload);
+          return local.createU03(caseId, payload);
         },
         updateCasefileStage(caseId, stage){
           const store = UIStore.load();
@@ -1374,6 +1411,12 @@
 
     const inputRole = el("inputRole");
     const inputCompany = el("inputCompany");
+    const inputCompanyUrl = el("inputCompanyUrl");
+    const inputJdFile = el("inputJdFile");
+    const inputJdText = el("inputJdText");
+    const jdModalBlock = el("jdModalBlock");
+
+    const MIN_JD_CHARS = 250;
 
     const activeCasefile = null;
     const compassActive = el("compassActive");
@@ -1602,10 +1645,15 @@
         : "";
       modalBackdrop.dataset.mode = mode;
       modalBackdrop.dataset.serverCaseId = serverCaseId;
+      modalBackdrop.dataset.createdCaseId = "";
       modalBackdrop.style.display = "flex";
       inputRole.value = opts?.role || "";
       inputCompany.value = opts?.company || "";
-      btnCreate.disabled = !(inputRole.value.trim() && inputCompany.value.trim());
+      if (inputCompanyUrl) inputCompanyUrl.value = "";
+      if (inputJdFile) inputJdFile.value = "";
+      if (inputJdText) inputJdText.value = "";
+      if (jdModalBlock) jdModalBlock.style.display = "block";
+      updateModalState();
       inputRole.focus();
     }
 
@@ -1613,37 +1661,102 @@
       modalBackdrop.style.display = "none";
       modalBackdrop.dataset.mode = "";
       modalBackdrop.dataset.serverCaseId = "";
+      modalBackdrop.dataset.createdCaseId = "";
     }
 
-    // Enable Create button only when role + company exist
-    [inputRole, inputCompany].forEach(inp => {
-      inp.addEventListener("input", () => {
-        btnCreate.disabled = !(inputRole.value.trim() && inputCompany.value.trim());
-      });
+    function updateModalState(){
+      const mode = modalBackdrop.dataset.mode || "manual";
+      const roleOk = inputRole.value.trim().length > 0;
+      const companyOk = inputCompany.value.trim().length > 0;
+      const jdOk = (inputJdText?.value || "").trim().length >= MIN_JD_CHARS;
+      btnCreate.disabled = mode === "server" ? !(roleOk && companyOk) : !(roleOk && companyOk && jdOk);
+    }
+
+    [inputRole, inputCompany, inputCompanyUrl, inputJdText].forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener("input", updateModalState);
     });
+
+    const extractText = async (file) => {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/extract_text`, {
+        method: "POST",
+        credentials: "include",
+        body: form
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+
+    if (inputJdFile){
+      inputJdFile.addEventListener("change", async (e) => {
+        updateModalState();
+        const file = e.target.files && e.target.files[0];
+        if (!file || !inputJdText) return;
+        try{
+          btnCreate.disabled = true;
+          const data = await extractText(file);
+          inputJdText.value = data.text || "";
+        } catch (err){
+          showToast(err?.message || "Could not read that file. Please try a PDF, DOCX, or TXT.");
+        } finally {
+          updateModalState();
+        }
+      });
+    }
 
     btnCreate.addEventListener("click", async () => {
       const role = inputRole.value.trim();
       const company = inputCompany.value.trim();
-      const mode = modalBackdrop.dataset.mode || "manual";
-      const serverCaseId = modalBackdrop.dataset.serverCaseId || "";
-      const cf = await DataAdapter.createCasefile({ role, company, stage: "screen" });
-      if (mode === "server" && serverCaseId){
-        const storeSnapshot = ensureOrchStore();
-        const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
-        orch.caseMap = orch.caseMap || {};
-        orch.caseMap[cf.id] = serverCaseId;
-        storeSnapshot.orch = orch;
-        UIStore.save(storeSnapshot);
+      const companyUrl = inputCompanyUrl?.value.trim() || "";
+      const jdText = inputJdText?.value.trim() || "";
+      if (!role || !company){
+        showToast("Please enter both a role and company.");
+        return;
       }
-      const refreshed = await refreshCasefiles();
-      if (cf && cf.id && !refreshed.some((c) => c.id === cf.id)){
-        state.casefiles = [...refreshed, cf];
+      if (modalBackdrop.dataset.mode !== "server" && jdText.length < MIN_JD_CHARS){
+        showToast(`Please paste at least ${MIN_JD_CHARS} characters from the job description.`);
+        return;
       }
-      closeModal();
-      render();
-      setActive(cf.id);
-      ensureStageOpen(cf.stage);
+      btnCreate.disabled = true;
+      try{
+        const mode = modalBackdrop.dataset.mode || "manual";
+        const serverCaseId = modalBackdrop.dataset.serverCaseId || "";
+        const createdCaseId = modalBackdrop.dataset.createdCaseId || "";
+        const cf = createdCaseId
+          ? { id: createdCaseId, role, company, stage: "screen", companyUrl }
+          : await DataAdapter.createCasefile({ role, company, stage: "screen", company_url: companyUrl });
+        if (mode === "server" && serverCaseId){
+          const storeSnapshot = ensureOrchStore();
+          const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
+          orch.caseMap = orch.caseMap || {};
+          orch.caseMap[cf.id] = serverCaseId;
+          storeSnapshot.orch = orch;
+          UIStore.save(storeSnapshot);
+        }
+        modalBackdrop.dataset.createdCaseId = cf.id;
+        if (mode !== "server" && jdText){
+          await DataAdapter.createU03(cf.id, { jd_text: jdText });
+        }
+        const refreshed = await refreshCasefiles();
+        if (cf && cf.id && !refreshed.some((c) => c.id === cf.id)){
+          state.casefiles = [...refreshed, cf];
+        }
+        closeModal();
+        render();
+        setActive(cf.id);
+        ensureStageOpen(cf.stage);
+      } catch (err){
+        showToast(err?.message || "Could not create casefile. Please try again.");
+        btnCreate.disabled = false;
+      }
     });
 
     function ensureStageOpen(stage){
