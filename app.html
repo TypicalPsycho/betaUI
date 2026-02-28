@@ -1677,24 +1677,6 @@
       inp.addEventListener("input", updateModalState);
     });
 
-    const extractText = async (file) => {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(`${API_BASE}/extract_text`, {
-        method: "POST",
-        credentials: "include",
-        body: form
-      });
-      const text = await res.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
-      if (!res.ok){
-        const msg = data.detail || data.error || `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-      return data;
-    };
-
     if (inputJdFile){
       inputJdFile.addEventListener("change", async (e) => {
         updateModalState();
