@@ -1942,8 +1942,12 @@
     function renderMessages(){
       messagesEl.innerHTML = "";
       if (!state.messages.length){
-        chatEmpty.style.display = "flex";
-        chatEmpty.innerHTML = renderMarkdown(emptyGuidance(state.activeStage));
+        chatEmpty.style.display = "none";
+        const div = document.createElement("div");
+        div.className = "msg assistant";
+        div.innerHTML = renderMarkdown(emptyGuidance(state.activeStage));
+        messagesEl.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
         return;
       }
       chatEmpty.style.display = "none";
@@ -2107,22 +2111,26 @@
     function emptyGuidance(stage){
       return `**Welcome to SignalBench — the Interview Operating System.**
 
-## Quick Tour (Upper Left to Bottom)
-1. **Navigation:** Click the four-ties logo anytime to open the main menu.
-2. **Casefiles:** If you added a casefile already, you are set. If not, select + New Casefile, enter a title and company, and import the job description. Create one casefile per opportunity.
-3. **Stages:** Stage cards track your interview cycle. New casefiles begin in Screen. Drag and drop as you progress. Click a stage title to expand or collapse it.
-4. **Profile:** Lower left shows your profile and subscription tier. Clicking your profile image also opens the menu.
-5. **Action Bar:** Shows your Active Casefile and optional Auto-Prompts. Edit any prompt or type directly in the chat box. Press Enter to send.
-6. **Attachments:** Use the + icon to upload job descriptions, company intelligence, or resume edits.
-7. **System State:** Reflects internal context used to interpret your work. No action required.
-8. **Dialogue Panel:** The right panel is your working dialogue for analysis, signal interpretation, and decision framing.
+Here is a quick, practical tour so you can orient fast:
 
-## Getting Started
-- Choose an auto-prompt below, or type your own message and press Enter.
-- If you feel stuck, type "What's next?" or "I'm stuck."
+**1) Navigation & Profile**
+Click the four-ties logo to open the main menu. Your profile and subscription tier are in the lower left; clicking your profile image also opens the menu.
 
-## Mindset
-You control the pace, progress, and direction. The system provides structure and judgment support as you move forward.`;
+**2) Casefiles & Stages**
+Each casefile represents one opportunity. If you did not add one yet, click **+ New Casefile**, add a title and company, and import the job description. New casefiles begin in **Screen**. Drag and drop to move stages, and click a stage title to expand or collapse it.
+
+**3) Action Bar & Prompts**
+The action bar shows your Active Casefile and three optional Auto-Prompts. You can edit a prompt or just type your own message. Press Enter to send.
+
+**4) Attachments & System State**
+Use the **+** icon to attach job descriptions, company intelligence, or resume edits. The System State indicator reflects internal context and does not require action.
+
+**5) Dialogue Panel**
+The right panel is your working dialogue for analysis, signal interpretation, and decision framing.
+
+**To get started:** choose an auto-prompt below, or type your own message. If you feel stuck, just type “What’s next?” or “I’m stuck.”
+
+At all times, you control the pace, progress, and direction. The system provides structure and judgment support as you move forward.`;
     }
 
     function stageToState(stage){
