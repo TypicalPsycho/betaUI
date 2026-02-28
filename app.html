@@ -1295,6 +1295,7 @@
       activeView: "casefile", // casefile | profile | storybook
       casefiles: [], // {id, role, company, stage}
       messages: [],
+      scrollMode: null, // "bottom" | "assistant-top"
       noCaseReminderCount: 0,
       activeStage: "Screen",
       systemState: null,
@@ -1928,13 +1929,16 @@
       if (result && typeof result.then === "function"){
         result.then((msgs) => {
           state.messages = Array.isArray(msgs) ? msgs : [];
+          state.scrollMode = "bottom";
           renderMessages();
         }).catch(() => {
           state.messages = [];
+          state.scrollMode = "bottom";
           renderMessages();
         });
       } else {
         state.messages = Array.isArray(result) ? result : [];
+        state.scrollMode = "bottom";
         renderMessages();
       }
     }
@@ -1961,7 +1965,22 @@
         }
         messagesEl.appendChild(div);
       }
-      chat.scrollTop = chat.scrollHeight;
+      if (state.scrollMode === "assistant-top"){
+        const assistants = messagesEl.querySelectorAll(".msg.assistant");
+        const lastAssistant = assistants[assistants.length - 1];
+        if (lastAssistant){
+          const chatRect = chat.getBoundingClientRect();
+          const msgRect = lastAssistant.getBoundingClientRect();
+          const targetTop = (msgRect.top - chatRect.top) + chat.scrollTop - 20;
+          chat.scrollTop = Math.max(0, targetTop);
+        }
+        state.scrollMode = null;
+        return;
+      }
+      if (state.scrollMode === "bottom"){
+        chat.scrollTop = chat.scrollHeight;
+        state.scrollMode = null;
+      }
     }
 
     function renderMarkdown(input){
@@ -2203,6 +2222,7 @@ At all times, you control the pace, progress, and direction. The system provides
       if (needsCaseReminder){
         state.noCaseReminderCount += 1;
       }
+      state.scrollMode = "bottom";
       renderMessages();
       typingEl.style.display = "block";
 
@@ -2213,6 +2233,7 @@ At all times, you control the pace, progress, and direction. The system provides
         createdAt: new Date().toISOString()
       };
       state.messages.push(assistantMsg);
+      state.scrollMode = "bottom";
       renderMessages();
 
       const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
@@ -2267,6 +2288,7 @@ At all times, you control the pace, progress, and direction. The system provides
       } finally {
         typingEl.style.display = "none";
         DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
+        state.scrollMode = "assistant-top";
         renderMessages();
         if (needsCaseReminder && state.noCaseReminderCount % 4 === 0){
           const reminder = {
