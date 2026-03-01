@@ -167,6 +167,12 @@ textarea{
   resize:vertical;
 }
 
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"]{
+  accent-color: var(--accent);
+}
+
 .btn{
   border:1px solid var(--line);
   background:#fff;
