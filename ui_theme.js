@@ -32,14 +32,14 @@
       "--accent":"#8a6c3c"
     },
     batman: {
-      "--bg":"#0f1114",
-      "--ink":"#f5f7fa",
-      "--muted":"#a3a9b1",
-      "--line":"#2a2f36",
-      "--soft":"#1d2127",
-      "--panel":"#14181e",
-      "--active":"#20252d",
-      "--accent":"#2d7ff9"
+      "--bg":"#0F1115",
+      "--ink":"#E6EAF0",
+      "--muted":"#A8B0BC",
+      "--line":"#303845",
+      "--soft":"#2B3340",
+      "--panel":"#161A21",
+      "--active":"#1E242D",
+      "--accent":"#2F4F8F"
     }
   };
 
