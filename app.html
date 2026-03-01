@@ -2469,6 +2469,9 @@ At all times, you control the pace, progress, and direction. The system provides
           if (!sawDelta){
             sawDelta = true;
             assistantMsg.content = "";
+            if (chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 2){
+              chat.scrollTop = Math.max(0, chat.scrollTop - 1);
+            }
           }
           assistantMsg.content += delta;
           renderStreaming();
