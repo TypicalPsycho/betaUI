@@ -2458,8 +2458,8 @@ At all times, you control the pace, progress, and direction. The system provides
               const chatRect = chat.getBoundingClientRect();
               const msgRect = lastAssistant.getBoundingClientRect();
               const offset = msgRect.top - chatRect.top;
-              if (offset > 200){
-                chat.scrollTop += (offset - 200);
+              if (offset > 80){
+                chat.scrollTop += (offset - 80);
               }
             }
             lastRender = now;
