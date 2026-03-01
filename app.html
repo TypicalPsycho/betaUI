@@ -2447,11 +2447,21 @@ At all times, you control the pace, progress, and direction. The system provides
       try{
         let sawDelta = false;
         let lastRender = 0;
+        let usedStreaming = false;
         const renderStreaming = (force=false) => {
           const now = Date.now();
           if (force || now - lastRender > 120){
-            state.scrollMode = "bottom";
             renderMessages();
+            const assistants = messagesEl.querySelectorAll(".msg.assistant");
+            const lastAssistant = assistants[assistants.length - 1];
+            if (lastAssistant){
+              const chatRect = chat.getBoundingClientRect();
+              const msgRect = lastAssistant.getBoundingClientRect();
+              const offset = msgRect.top - chatRect.top;
+              if (offset > 200){
+                chat.scrollTop += (offset - 200);
+              }
+            }
             lastRender = now;
           }
         };
@@ -2467,6 +2477,7 @@ At all times, you control the pace, progress, and direction. The system provides
         let resp = null;
         try{
           resp = await streamTurn(payload, onDelta);
+          usedStreaming = true;
         } catch (streamErr){
           if (!sawDelta){
             resp = await DataAdapter.sendTurn(payload);
@@ -2486,7 +2497,7 @@ At all times, you control the pace, progress, and direction. The system provides
       } finally {
         typingEl.style.display = "none";
         DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
-        state.scrollMode = "assistant-top";
+        state.scrollMode = null;
         renderMessages();
         if (needsCaseReminder && state.noCaseReminderCount % 4 === 0){
           const reminder = {
