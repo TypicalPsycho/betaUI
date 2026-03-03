@@ -125,7 +125,11 @@
     }
 
     @media (max-width: 480px){
-      .wrap{padding:0;}
+      html, body{overflow-x:hidden;}
+      .wrap{
+        padding:0;
+        box-shadow:none;
+      }
       .app{
         border-radius:0;
         grid-template-columns: 1fr;
@@ -841,6 +845,7 @@
       .compass-actions{
         max-width:100%;
         overflow-x:auto;
+        overflow-y:hidden;
         -webkit-overflow-scrolling:touch;
         scrollbar-width:none;
       }
@@ -848,7 +853,7 @@
       .compass-steps{
         flex-wrap:nowrap;
         white-space:nowrap;
-        min-width:0;
+        min-width:max-content;
       }
       .compass-pill{flex:0 0 auto;}
     }
