@@ -832,6 +832,17 @@
       flex-wrap:wrap;
       font-size:var(--fs-14);
     }
+    @media (max-width: 480px){
+      .compass-steps{
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        white-space:nowrap;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+      }
+      .compass-steps::-webkit-scrollbar{display:none;}
+      .compass-pill{flex:0 0 auto;}
+    }
     .compass-pill{
       border:1px solid var(--line);
       border-radius:999px;
