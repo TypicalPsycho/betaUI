@@ -62,16 +62,121 @@
       border-radius:16px;
       overflow:hidden;
     }
-    @media (max-width: 768px){
-      .wrap{padding:4px;}
-      .app{border-radius:12px;}
-      aside{display:none !important;}
-      .app{grid-template-columns: 1fr !important;}
-    }
-    @media (min-width: 1024px){
+    @media (min-width: 1025px){
       aside{display:flex;}
       .app{grid-template-columns: 280px minmax(0, 1fr);}
     }
+
+    .mobile-bar{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      background:var(--panel);
+      position:relative;
+      z-index:3;
+      grid-column:1 / -1;
+    }
+    .mobile-brand{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      font-family:var(--serif);
+      font-weight:700;
+      font-size:var(--fs-18);
+    }
+    .icon-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      height:36px;
+      width:36px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      font-size:20px;
+      color:var(--ink);
+    }
+
+    .drawer-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+      z-index:2;
+    }
+
+    .rail-toggle{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      height:30px;
+      width:30px;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      cursor:pointer;
+      align-self:flex-end;
+      margin-bottom:8px;
+    }
+
+    @media (max-width: 480px){
+      .wrap{padding:0;}
+      .app{
+        border-radius:0;
+        grid-template-columns: 1fr;
+        grid-template-rows:auto 1fr;
+      }
+      .mobile-bar{display:flex;}
+      aside{
+        position:fixed;
+        top:0;
+        left:0;
+        height:100vh;
+        width:85vw;
+        max-width:320px;
+        transform:translateX(-100%);
+        transition:transform .25s ease;
+        z-index:4;
+        box-shadow:18px 0 40px rgba(0,0,0,.18);
+        grid-row:2;
+      }
+      main{grid-row:2;}
+      body.drawer-open{overflow:hidden;}
+      body.drawer-open aside{transform:translateX(0);}
+      body.drawer-open .drawer-backdrop{
+        opacity:1;
+        pointer-events:auto;
+      }
+      .composer{position:sticky; bottom:0; background:var(--panel);}
+      .composer .hint{display:none;}
+      .compass-meta{display:none;}
+      .compass-label{display:none;}
+      .compass-top{font-size:12px;}
+      .compass-steps{
+        display:flex;
+        gap:8px;
+        overflow-x:auto;
+        white-space:nowrap;
+        -webkit-overflow-scrolling:touch;
+      }
+      .compass-pill{flex:0 0 auto;}
+    }
+
+    @media (min-width: 481px) and (max-width: 1024px){
+      .app{grid-template-columns: 240px minmax(0, 1fr);}
+      .rail-toggle{display:flex;}
+    }
+    body.rail-collapsed aside{width:72px;}
+    body.rail-collapsed .app{grid-template-columns: 72px minmax(0, 1fr);}
+    body.rail-collapsed .stages summary span:first-child,
+    body.rail-collapsed .case-list{display:none;}
+    body.rail-collapsed .sidebar-brand span{display:none;}
 
     /* Title bar (in-app, not browser tab) */
     .titlebar{
@@ -867,7 +972,12 @@
   <div class="guard-banner" id="guardBanner">Guard active: redirecting to auth/onboarding (demo only)</div>
   <div class="toast" id="toast"></div>
   <div class="wrap">
+    <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
     <div class="app" role="application" aria-label="SignalBench beta v0.1">
+      <div class="mobile-bar">
+        <button id="btnDrawerOpen" class="icon-btn" type="button" aria-label="Open casefiles">☰</button>
+        <span class="mobile-brand">SignalBench</span>
+      </div>
 
       <!-- Sidebar -->
       <aside>
@@ -889,6 +999,7 @@
             </div>
             <span>SignalBench</span>
           </div>
+          <button class="rail-toggle" id="btnRailToggle" type="button" aria-label="Collapse rail">⟨</button>
           <button class="new-casefile" id="btnNewCasefile" type="button">+ New Casefile</button>
         </div>
 
@@ -1409,6 +1520,9 @@
     const btnNewCasefile = el("btnNewCasefile");
     const btnCancel = el("btnCancel");
     const btnCreate = el("btnCreate");
+    const btnDrawerOpen = el("btnDrawerOpen");
+    const drawerBackdrop = el("drawerBackdrop");
+    const btnRailToggle = el("btnRailToggle");
 
     const inputRole = el("inputRole");
     const inputCompany = el("inputCompany");
@@ -1433,6 +1547,18 @@
     const compassSteps = el("compassSteps");
     const msgInput = el("msg");
     const btnClearDemo = el("btnClearDemo");
+
+    const isPhone = () => window.matchMedia("(max-width: 480px)").matches;
+    const getActiveCasefile = () => state.casefiles.find((cf) => cf.id === state.activeCaseId) || null;
+    const setCompassActiveText = (cf) => {
+      if (!compassActive) return;
+      if (!cf){
+        compassActive.textContent = "No active casefile selected";
+        return;
+      }
+      const label = isPhone() ? "Casefile" : "Active Casefile";
+      compassActive.textContent = `${label}: ${cf.role}, ${cf.company}`;
+    };
 
     const formatDate = (value) => {
       if (!value) return "";
@@ -1610,6 +1736,33 @@
         });
       });
     }
+
+    const openDrawer = () => document.body.classList.add("drawer-open");
+    const closeDrawer = () => document.body.classList.remove("drawer-open");
+
+    if (btnDrawerOpen){
+      btnDrawerOpen.addEventListener("click", () => {
+        openDrawer();
+      });
+    }
+    if (drawerBackdrop){
+      drawerBackdrop.addEventListener("click", closeDrawer);
+    }
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape"){
+        closeDrawer();
+      }
+    });
+
+    if (btnRailToggle){
+      btnRailToggle.addEventListener("click", () => {
+        document.body.classList.toggle("rail-collapsed");
+      });
+    }
+
+    window.addEventListener("resize", () => {
+      setCompassActiveText(getActiveCasefile());
+    });
 
     const clearLocalUIState = () => {
       try{
@@ -1974,11 +2127,7 @@
       state.activeStage = stage;
       state.intentKey = null;
 
-      if (!cf){
-        if (compassActive) compassActive.textContent = "No active casefile selected";
-      } else {
-        if (compassActive) compassActive.textContent = `Active Casefile: ${cf.role}, ${cf.company}`;
-      }
+      setCompassActiveText(cf);
       const store = UIStore.load();
       const stateMap = store.orch?.stateMap || {};
       state.systemState = cf?.id ? (stateMap[cf.id] || null) : null;
