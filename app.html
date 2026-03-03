@@ -67,25 +67,13 @@
       .app{grid-template-columns: 280px minmax(0, 1fr);}
     }
 
-    .mobile-bar{
-      display:none;
-      align-items:flex-start;
-      justify-content:flex-start;
-      padding:calc(env(safe-area-inset-top) + 12px) 12px 8px 12px;
-      border-bottom:1px solid var(--line);
-      background:var(--panel);
-      position:fixed;
-      top:0;
-      left:0;
-      right:0;
-      z-index:5;
-    }
+    .mobile-bar{display:none;}
     .icon-btn{
       border:1px solid var(--line);
       background:#fff;
-      border-radius:12px;
-      height:40px;
-      width:40px;
+      border-radius:50%;
+      height:42px;
+      width:42px;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -95,9 +83,17 @@
       color:var(--ink);
     }
     .icon-btn img{
-      height:26px;
-      width:26px;
+      height:28px;
+      width:28px;
       display:block;
+    }
+
+    .mobile-logo{
+      display:none;
+      position:fixed;
+      top:calc(env(safe-area-inset-top) + 12px);
+      left:12px;
+      z-index:5;
     }
 
     .drawer-backdrop{
@@ -132,8 +128,7 @@
         grid-template-columns: 1fr;
         grid-template-rows:1fr;
       }
-      .mobile-bar{display:flex;}
-      main{padding-top:64px;}
+      .mobile-logo{display:flex;}
       aside{
         position:fixed;
         top:0;
@@ -164,7 +159,9 @@
         overflow-x:auto;
         white-space:nowrap;
         -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
       }
+      .compass-steps::-webkit-scrollbar{display:none;}
       .compass-pill{flex:0 0 auto;}
     }
 
@@ -974,7 +971,7 @@
   <div class="wrap">
     <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
     <div class="app" role="application" aria-label="SignalBench beta v0.1">
-      <div class="mobile-bar">
+      <div class="mobile-logo">
         <button id="btnDrawerOpen" class="icon-btn" type="button" aria-label="Open casefiles">
           <img src="icons/SVG_ties_on_white.svg" alt="" />
         </button>
@@ -1740,10 +1737,11 @@
 
     const openDrawer = () => document.body.classList.add("drawer-open");
     const closeDrawer = () => document.body.classList.remove("drawer-open");
+    const toggleDrawer = () => document.body.classList.toggle("drawer-open");
 
     if (btnDrawerOpen){
       btnDrawerOpen.addEventListener("click", () => {
-        openDrawer();
+        toggleDrawer();
       });
     }
     if (drawerBackdrop){
