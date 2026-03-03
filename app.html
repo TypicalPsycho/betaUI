@@ -69,35 +69,35 @@
 
     .mobile-bar{
       display:none;
-      align-items:center;
-      justify-content:space-between;
-      padding:10px 12px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      padding:calc(env(safe-area-inset-top) + 12px) 12px 8px 12px;
       border-bottom:1px solid var(--line);
       background:var(--panel);
-      position:relative;
-      z-index:3;
-      grid-column:1 / -1;
-    }
-    .mobile-brand{
-      position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      font-family:var(--serif);
-      font-weight:700;
-      font-size:var(--fs-18);
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      z-index:5;
     }
     .icon-btn{
       border:1px solid var(--line);
       background:#fff;
-      border-radius:10px;
-      height:36px;
-      width:36px;
+      border-radius:12px;
+      height:40px;
+      width:40px;
       display:flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
+      padding:0;
       font-size:20px;
       color:var(--ink);
+    }
+    .icon-btn img{
+      height:26px;
+      width:26px;
+      display:block;
     }
 
     .drawer-backdrop{
@@ -130,9 +130,10 @@
       .app{
         border-radius:0;
         grid-template-columns: 1fr;
-        grid-template-rows:auto 1fr;
+        grid-template-rows:1fr;
       }
       .mobile-bar{display:flex;}
+      main{padding-top:64px;}
       aside{
         position:fixed;
         top:0;
@@ -144,9 +145,8 @@
         transition:transform .25s ease;
         z-index:4;
         box-shadow:18px 0 40px rgba(0,0,0,.18);
-        grid-row:2;
+        background:var(--panel);
       }
-      main{grid-row:2;}
       body.drawer-open{overflow:hidden;}
       body.drawer-open aside{transform:translateX(0);}
       body.drawer-open .drawer-backdrop{
@@ -975,8 +975,9 @@
     <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
     <div class="app" role="application" aria-label="SignalBench beta v0.1">
       <div class="mobile-bar">
-        <button id="btnDrawerOpen" class="icon-btn" type="button" aria-label="Open casefiles">☰</button>
-        <span class="mobile-brand">SignalBench</span>
+        <button id="btnDrawerOpen" class="icon-btn" type="button" aria-label="Open casefiles">
+          <img src="icons/SVG_ties_on_white.svg" alt="" />
+        </button>
       </div>
 
       <!-- Sidebar -->
