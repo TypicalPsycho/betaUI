@@ -95,6 +95,9 @@
       left:12px;
       z-index:5;
     }
+    .mobile-logo .icon-btn{
+      box-shadow:0 8px 18px rgba(29,35,42,.18);
+    }
 
     .drawer-backdrop{
       position:fixed;
@@ -127,6 +130,8 @@
         border-radius:0;
         grid-template-columns: 1fr;
         grid-template-rows:1fr;
+        box-shadow:none;
+        border:none;
       }
       .mobile-logo{display:flex;}
       aside{
@@ -833,14 +838,18 @@
       font-size:var(--fs-14);
     }
     @media (max-width: 480px){
-      .compass-steps{
-        flex-wrap:nowrap;
+      .compass-actions{
+        max-width:100%;
         overflow-x:auto;
-        white-space:nowrap;
         -webkit-overflow-scrolling:touch;
         scrollbar-width:none;
       }
-      .compass-steps::-webkit-scrollbar{display:none;}
+      .compass-actions::-webkit-scrollbar{display:none;}
+      .compass-steps{
+        flex-wrap:nowrap;
+        white-space:nowrap;
+        min-width:0;
+      }
       .compass-pill{flex:0 0 auto;}
     }
     .compass-pill{
@@ -1559,6 +1568,12 @@
 
     const isPhone = () => window.matchMedia("(max-width: 480px)").matches;
     const getActiveCasefile = () => state.casefiles.find((cf) => cf.id === state.activeCaseId) || null;
+    const setMessagePlaceholder = () => {
+      if (!msgInput) return;
+      msgInput.placeholder = isPhone()
+        ? "Select an auto-prompt above or you can continue freeform here"
+        : "... or you can continue freeform here";
+    };
     const setCompassActiveText = (cf) => {
       if (!compassActive) return;
       if (!cf){
@@ -1770,8 +1785,10 @@
       });
     }
 
+    setMessagePlaceholder();
     window.addEventListener("resize", () => {
       setCompassActiveText(getActiveCasefile());
+      setMessagePlaceholder();
     });
 
     const clearLocalUIState = () => {
