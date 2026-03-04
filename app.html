@@ -178,10 +178,70 @@
       .compass-pill{flex:0 0 auto;}
     }
 
-    @media (min-width: 481px) and (max-width: 1024px){
-      .app{grid-template-columns: 240px minmax(0, 1fr);}
-      .rail-toggle{display:flex;}
+    @media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait){
+      html, body{overflow-x:hidden;}
+      .wrap{
+        padding:0;
+        box-shadow:none;
+      }
+      .app{
+        border-radius:0;
+        grid-template-columns: 1fr;
+        grid-template-rows:1fr;
+        box-shadow:none;
+        border:none;
+        width:100vw;
+      }
+      .mobile-logo{display:flex;}
+      .mobile-logo .icon-btn{height:48px; width:48px;}
+      .mobile-logo .icon-btn img{height:32px; width:32px;}
+      aside{
+        position:fixed;
+        top:0;
+        left:0;
+        height:100vh;
+        width:85vw;
+        max-width:360px;
+        transform:translateX(-100%);
+        transition:transform .25s ease;
+        z-index:4;
+        box-shadow:none;
+        background:var(--panel);
+      }
+      body.drawer-open aside{
+        transform:translateX(0);
+        box-shadow:18px 0 40px rgba(0,0,0,.18);
+      }
+      body.drawer-open .drawer-backdrop{
+        opacity:1;
+        pointer-events:auto;
+      }
+      .composer{position:sticky; bottom:0; background:var(--panel);}
+      .composer .hint{display:none;}
+      .compass-meta{display:none;}
+      .compass-label{display:none;}
+      .compass-top{font-size:12px;}
+      .rail-toggle{display:none;}
     }
+
+    @media (min-width: 481px) and (max-width: 1024px) and (orientation: landscape){
+      .app{grid-template-columns: 240px minmax(0, 1fr);}
+      .mobile-logo{display:none;}
+      .rail-toggle{display:none;}
+      aside{
+        position:relative;
+        transform:none;
+        box-shadow:none;
+        width:auto;
+        max-width:none;
+      }
+      body.rail-collapsed .stages summary span:first-child{display:inline;}
+      body.rail-collapsed .case-list{display:block;}
+      body.rail-collapsed .sidebar-brand span{display:inline;}
+      body.rail-collapsed aside{width:auto;}
+      body.rail-collapsed .app{grid-template-columns: 240px minmax(0, 1fr);}
+    }
+
     body.rail-collapsed aside{width:72px;}
     body.rail-collapsed .app{grid-template-columns: 72px minmax(0, 1fr);}
     body.rail-collapsed .stages summary span:first-child,
@@ -1574,6 +1634,10 @@
     const btnClearDemo = el("btnClearDemo");
 
     const isPhone = () => window.matchMedia("(max-width: 480px)").matches;
+    const isCompact = () =>
+      window.matchMedia("(max-width: 480px), (min-width: 481px) and (max-width: 1024px) and (orientation: portrait)").matches;
+    const isTabletLandscape = () =>
+      window.matchMedia("(min-width: 481px) and (max-width: 1024px) and (orientation: landscape)").matches;
     const getActiveCasefile = () => state.casefiles.find((cf) => cf.id === state.activeCaseId) || null;
     const setMessagePlaceholder = () => {
       if (!msgInput) return;
@@ -1587,7 +1651,7 @@
         compassActive.textContent = "No active casefile selected";
         return;
       }
-      const label = isPhone() ? "Casefile" : "Active Casefile";
+      const label = isCompact() ? "Casefile" : "Active Casefile";
       compassActive.textContent = `${label}: ${cf.role}, ${cf.company}`;
     };
 
@@ -1796,6 +1860,10 @@
     window.addEventListener("resize", () => {
       setCompassActiveText(getActiveCasefile());
       setMessagePlaceholder();
+      if (isTabletLandscape()){
+        document.body.classList.remove("rail-collapsed");
+        document.body.classList.remove("drawer-open");
+      }
     });
 
     const clearLocalUIState = () => {
