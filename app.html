@@ -1638,6 +1638,19 @@
       window.matchMedia("(max-width: 480px), (min-width: 481px) and (max-width: 1024px) and (orientation: portrait)").matches;
     const isTabletLandscape = () =>
       window.matchMedia("(min-width: 481px) and (max-width: 1024px) and (orientation: landscape)").matches;
+    const isTabletPortrait = () =>
+      window.matchMedia("(min-width: 481px) and (max-width: 1024px) and (orientation: portrait)").matches;
+    const getKeyboardHeight = () => {
+      if (!window.visualViewport) return 0;
+      const diff = window.innerHeight - window.visualViewport.height;
+      return diff > 0 ? diff : 0;
+    };
+    const getTopBumper = (base) => {
+      if (!isTabletPortrait()) return base;
+      const kb = getKeyboardHeight();
+      if (kb < 120) return base;
+      return base + Math.min(200, Math.round(kb * 0.6));
+    };
     const getActiveCasefile = () => state.casefiles.find((cf) => cf.id === state.activeCaseId) || null;
     const setMessagePlaceholder = () => {
       if (!msgInput) return;
@@ -2318,7 +2331,7 @@
         if (lastAssistant){
           const chatRect = chat.getBoundingClientRect();
           const msgRect = lastAssistant.getBoundingClientRect();
-          const targetTop = (msgRect.top - chatRect.top) + chat.scrollTop - 100;
+          const targetTop = (msgRect.top - chatRect.top) + chat.scrollTop - getTopBumper(100);
           chat.scrollTop = Math.max(0, targetTop);
         }
         state.scrollMode = null;
@@ -2710,8 +2723,9 @@ At all times, you control the pace, progress, and direction. The system provides
               const chatRect = chat.getBoundingClientRect();
               const msgRect = lastAssistant.getBoundingClientRect();
               const offset = msgRect.top - chatRect.top;
-              if (offset > 80){
-                chat.scrollTop += (offset - 80);
+              const bumper = getTopBumper(80);
+              if (offset > bumper){
+                chat.scrollTop += (offset - bumper);
               }
             }
             lastRender = now;
