@@ -1216,12 +1216,12 @@
 
       <div class="grid">
         <label class="field">
-          <span>Role</span>
-          <input id="inputRole" type="text" placeholder="e.g. VP Operations" />
+          <span>Job Title</span>
+          <input id="inputRole" type="text" maxlength="28" placeholder="e.g. VP Operations" />
         </label>
         <label class="field">
           <span>Company</span>
-          <input id="inputCompany" type="text" placeholder="e.g. Amazon" />
+          <input id="inputCompany" type="text" maxlength="28" placeholder="e.g. Amazon" />
         </label>
       </div>
       <div id="jdModalBlock">
@@ -1231,13 +1231,13 @@
         </label>
         <div style="margin-top:12px;">
           <label class="field">
-            <span>Upload job description (required)</span>
+            <span>Upload job description in PDF, TXT or DOCX format only</span>
             <input id="inputJdFile" type="file" accept=".pdf,.docx,.txt" />
           </label>
           <div class="note" style="margin:8px 0;">OR</div>
           <label class="field">
-            <span>Paste job description text (min 250 characters)</span>
-            <textarea id="inputJdText" placeholder="Paste JD text here"></textarea>
+            <span>Paste job description text from other formats below</span>
+            <textarea id="inputJdText" placeholder="Paste job description text here"></textarea>
           </label>
         </div>
       </div>

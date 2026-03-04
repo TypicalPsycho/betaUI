@@ -49,11 +49,11 @@
           <div class="row">
             <label class="field" style="flex:1">
               <span>Job Title</span>
-              <input id="jobTitle" type="text" maxlength="20" placeholder="e.g. VP Operations" required />
+              <input id="jobTitle" type="text" maxlength="28" placeholder="e.g. VP Operations" required />
             </label>
             <label class="field" style="flex:1">
               <span>Company</span>
-              <input id="companyName" type="text" maxlength="20" placeholder="e.g. Amazon" required />
+              <input id="companyName" type="text" maxlength="28" placeholder="e.g. Amazon" required />
             </label>
           </div>
           <label class="field" style="margin-top:12px;">
@@ -113,6 +113,7 @@
     const jdText = document.getElementById("jdText");
     const btnCreate = document.getElementById("btnCreateCasefile");
     const btnSkip = document.getElementById("btnSkipCasefile");
+    const defaultCreateLabel = btnCreate.textContent;
 
     const API_BASE = window.SB_API_BASE || "/api";
     const postJson = async (path, payload) => {
@@ -120,6 +121,23 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+    const postJsonKeepalive = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        keepalive: true,
         body: JSON.stringify(payload || {})
       });
       const text = await res.text();
@@ -180,6 +198,8 @@
     });
 
     btnCreate.addEventListener("click", async () => {
+      btnCreate.disabled = true;
+      btnCreate.textContent = "Creating...";
       const store = UIStore.load();
       const localId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
       const role = jobTitle.value.trim();
@@ -223,11 +243,15 @@
           interviewed: document.querySelector("input[name='interviewed']:checked")?.value || ""
         };
         if (jdPayload.jd_text){
-          await postJson("/u03", jdPayload);
+          postJsonKeepalive("/u03", jdPayload).catch((err) => {
+            console.warn("u03 upload failed", err);
+          });
         }
         window.location.href = "help.html";
       } catch (err){
         alert(err?.message || "Could not create casefile. Please try again.");
+        btnCreate.textContent = defaultCreateLabel;
+        updateState();
       }
     });
     btnSkip.addEventListener("click", () => {

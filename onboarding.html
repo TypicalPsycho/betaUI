@@ -79,12 +79,12 @@
         <section class="card">
           <h2 class="title" style="font-size:22px;">Resume Upload</h2>
           <label class="field">
-            <span>Upload resume (PDF/DOCX/TXT)</span>
+            <span>Upload resume in PDF, TXT or DOCX format only</span>
             <input id="resumeFile" type="file" accept=".pdf,.docx,.txt" />
           </label>
           <div class="note" style="margin:8px 0;">OR</div>
           <label class="field">
-            <span>Paste resume text</span>
+            <span>Paste resume text from other formats below</span>
             <textarea placeholder="Paste resume text here"></textarea>
           </label>
 
@@ -158,6 +158,7 @@
     const consentBox = document.getElementById("consentBox");
     const privacyBox = document.getElementById("privacyBox");
     const btn = document.getElementById("btnCreateProfile");
+    const defaultBtnLabel = btn.textContent.trim();
     const toneSlider = document.getElementById("toneSlider");
     const lengthSlider = document.getElementById("lengthSlider");
     const levelChecks = Array.from(document.querySelectorAll("input[name='level']"));
@@ -297,6 +298,8 @@
     preferredName?.addEventListener("input", updateState);
 
     btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.textContent = "Saving...";
       const store = UIStore.load();
       store.auth = { ...(store.auth || {}), isAuthed: true };
       const existingEmail = store.me?.email || "";
@@ -333,12 +336,16 @@
       };
       try{
         await postJson("/u01", u01Payload);
-        await postJson("/preferences", prefPayload);
+        postJson("/preferences", prefPayload).catch((err) => {
+          console.warn("preferences save failed", err);
+        });
         store.u01 = { createdAt: new Date().toISOString() };
         UIStore.save(store);
         window.location.href = "casefile_new.html";
       } catch (err){
         alert(err?.message || "Could not save your profile. Please try again.");
+        btn.textContent = defaultBtnLabel;
+        updateState();
       }
     });
   </script>
