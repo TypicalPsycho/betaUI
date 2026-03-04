@@ -95,8 +95,7 @@
 
         <section class="card">
           <div class="row">
-            <button class="btn primary press-invert" id="btnCreateCasefile" type="button" disabled>Create Casefile</button>
-            <button class="btn press-invert" id="btnSkipCasefile" type="button">Skip Casefile Creation</button>
+            <button class="btn primary press-invert" id="btnCreateCasefile" type="button" disabled>Create Casefile and Continue</button>
           </div>
         </section>
         <div class="footer-link" style="text-align:center; margin:0; font-size:11px; line-height:1.2;">
@@ -112,7 +111,6 @@
     const jdFile = document.getElementById("jdFile");
     const jdText = document.getElementById("jdText");
     const btnCreate = document.getElementById("btnCreateCasefile");
-    const btnSkip = document.getElementById("btnSkipCasefile");
     const defaultCreateLabel = btnCreate.textContent;
 
     const API_BASE = window.SB_API_BASE || "/api";
@@ -247,15 +245,12 @@
             console.warn("u03 upload failed", err);
           });
         }
-        window.location.href = "help.html";
+        window.location.href = "app.html";
       } catch (err){
         alert(err?.message || "Could not create casefile. Please try again.");
         btnCreate.textContent = defaultCreateLabel;
         updateState();
       }
-    });
-    btnSkip.addEventListener("click", () => {
-      window.location.href = "help.html";
     });
   </script>
 
