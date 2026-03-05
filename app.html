@@ -1332,7 +1332,7 @@
           store.companySources = store.companySources || {};
           store.companySources[caseId] = sources;
           persist();
-          return { ok: true, stored_count: sources.length };
+          return { ok: true, stored_count: sources.length, source: "local" };
         },
         listCasefilesByStage(){
           return [...store.casefiles];
@@ -1550,17 +1550,20 @@
           const userId = store.orch?.userId || store.me?.id || null;
           const userEmail = store.me?.email || "";
           const orch = store.orch || { caseMap: {} };
-          const serverCaseId = orch.caseMap?.[caseId] || null;
-          if (!serverCaseId){
+          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          try{
+            await postJsonKeepalive("/u03/company_sources", {
+              user_id: userId,
+              user_email: userEmail,
+              case_id: serverCaseId,
+              sources
+            });
+            const localResp = local.ingestCompanySources(caseId, sources);
+            return { ok: true, stored_count: sources.length, source: "server", local: localResp };
+          } catch (err){
+            console.warn("company sources ingest failed", err);
             return local.ingestCompanySources(caseId, sources);
           }
-          await postJsonKeepalive("/u03/company_sources", {
-            user_id: userId,
-            user_email: userEmail,
-            case_id: serverCaseId,
-            sources
-          });
-          return local.ingestCompanySources(caseId, sources);
         },
         updateCasefileStage(caseId, stage){
           const store = UIStore.load();
@@ -2074,7 +2077,7 @@
         if (companySources.length){
           DataAdapter.ingestCompanySources(cf.id, companySources)
             .then((resp) => {
-              if (resp && resp.stored_count > 0){
+              if (resp && resp.source === "server" && resp.stored_count > 0){
                 showToast("Company sources synced.");
               }
             })
