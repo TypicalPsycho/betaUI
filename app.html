@@ -1217,18 +1217,18 @@
       <div class="grid">
         <label class="field">
           <span>Job Title</span>
-          <input id="inputRole" type="text" maxlength="28" placeholder="e.g. VP Operations" />
+          <input id="inputRole" type="text" maxlength="28" placeholder="e.g. VP Operations" style="font-weight:400;" />
         </label>
         <label class="field">
           <span>Company</span>
-          <input id="inputCompany" type="text" maxlength="28" placeholder="e.g. Amazon" />
+          <input id="inputCompany" type="text" maxlength="28" placeholder="e.g. Amazon" style="font-weight:400;" />
         </label>
       </div>
       <div id="jdModalBlock">
         <div style="margin-top:12px;">
           <label class="field">
             <span>Upload job description in PDF, TXT or DOCX format only</span>
-            <input id="inputJdFile" type="file" accept=".pdf,.docx,.txt" />
+            <input id="inputJdFile" type="file" accept=".pdf,.docx,.txt" style="font-weight:400;" />
           </label>
           <div class="note" style="margin:8px 0;">OR</div>
           <label class="field">
@@ -1243,13 +1243,13 @@
           </div>
           <div class="company-sources">
             <div class="row company-source-row" style="gap:8px; align-items:center;">
-              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/investors/earnings-release.pdf" style="flex:1;" />
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/investors/earnings-release.pdf" style="flex:1; font-weight:400;" />
             </div>
             <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
-              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/products.html" style="flex:1;" />
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/products.html" style="flex:1; font-weight:400;" />
             </div>
             <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
-              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/about" style="flex:1;" />
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/about" style="flex:1; font-weight:400;" />
             </div>
           </div>
         </div>
@@ -1521,7 +1521,7 @@
             UIStore.save(store);
             return cf;
           } catch (_err){
-            return local.createCasefile(payload);
+            throw _err;
           }
         },
         async createU03(caseId, payload){
@@ -1529,7 +1529,10 @@
           const userId = store.orch?.userId || store.me?.id || null;
           const userEmail = store.me?.email || "";
           const orch = store.orch || { caseMap: {} };
-          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          const serverCaseId = orch.caseMap?.[caseId] || null;
+          if (!serverCaseId){
+            return local.createU03(caseId, payload);
+          }
           const jdPayload = {
             user_id: userId,
             user_email: userEmail,
@@ -1547,7 +1550,10 @@
           const userId = store.orch?.userId || store.me?.id || null;
           const userEmail = store.me?.email || "";
           const orch = store.orch || { caseMap: {} };
-          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          const serverCaseId = orch.caseMap?.[caseId] || null;
+          if (!serverCaseId){
+            return local.ingestCompanySources(caseId, sources);
+          }
           await postJsonKeepalive("/u03/company_sources", {
             user_id: userId,
             user_email: userEmail,
@@ -2079,7 +2085,7 @@
         setActive(cf.id);
         ensureStageOpen(cf.stage);
       } catch (err){
-        showToast(err?.message || "Could not create casefile. Please try again.");
+        showToast(err?.message || "Could not create casefile on server. Please check your connection, wait 30 seconds, and try again.");
         btnCreate.disabled = false;
       }
     });

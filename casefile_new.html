@@ -277,7 +277,7 @@
         }
         window.location.href = "app.html";
       } catch (err){
-        alert(err?.message || "Could not create casefile. Please try again.");
+        alert(err?.message || "Could not create casefile on server. Please check your connection, wait 30 seconds, and try again.");
         btnCreate.textContent = defaultCreateLabel;
         updateState();
       }
