@@ -56,11 +56,6 @@
               <input id="companyName" type="text" maxlength="28" placeholder="e.g. Amazon" required />
             </label>
           </div>
-          <label class="field" style="margin-top:12px;">
-            <span>Company URL (optional, helps with company research)</span>
-            <input type="url" placeholder="https://company.com" />
-          </label>
-
           <div style="margin-top:14px;">
             <label class="field">
               <span>Upload job description (required)</span>
@@ -71,6 +66,23 @@
               <span>Paste job description text</span>
               <textarea id="jdText" placeholder="Paste JD text here"></textarea>
             </label>
+          </div>
+          <div class="field" style="margin-top:16px;">
+            <span>Company Sources (optional but recommended)</span>
+            <div class="note" style="margin:6px 0 8px;">
+              Add up to three informative URLs from the company's website to enrich the system's understanding of the company.
+            </div>
+            <div class="company-sources">
+              <div class="row company-source-row" style="gap:8px; align-items:center;">
+                <input class="company-source-url" type="url" placeholder="e.g. https://company.com/investors/earnings-release.pdf or https://company.com/10-k.pdf" style="flex:1;" />
+              </div>
+              <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
+                <input class="company-source-url" type="url" placeholder="e.g. https://company.com/products.html or https://company.com/solutions.html" style="flex:1;" />
+              </div>
+              <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
+                <input class="company-source-url" type="url" placeholder="e.g. https://company.com/about or https://company.com/who-we-are" style="flex:1;" />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -202,7 +214,13 @@
       const localId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
       const role = jobTitle.value.trim();
       const company = companyName.value.trim();
-      const companyUrl = document.querySelector("input[type='url']").value.trim();
+      const sourceRows = Array.from(document.querySelectorAll(".company-source-row"));
+      const companySources = sourceRows.map((row) => {
+        const url = row.querySelector(".company-source-url")?.value.trim() || "";
+        if (!url) return null;
+        return { url };
+      }).filter(Boolean).slice(0, 3);
+      const companyUrl = companySources[0]?.url || "";
       const userId = store.orch?.userId || store.me?.id || null;
       const userEmail = store.me?.email || "";
       const createPayload = {
@@ -212,6 +230,7 @@
         company_name: company,
         role_title: role,
         company_url: companyUrl,
+        company_sources: companySources,
         stage: "screen"
       };
       try{
@@ -224,7 +243,8 @@
           role,
           company,
           stage: "screen",
-          companyUrl
+          companyUrl,
+          companySources
         });
         store.activeCaseId = caseId;
         store.orch = store.orch || { userId: userId, caseMap: {} };
@@ -243,6 +263,16 @@
         if (jdPayload.jd_text){
           postJsonKeepalive("/u03", jdPayload).catch((err) => {
             console.warn("u03 upload failed", err);
+          });
+        }
+        if (companySources.length){
+          postJsonKeepalive("/u03/company_sources", {
+            user_id: userId,
+            user_email: userEmail,
+            case_id: caseId,
+            sources: companySources
+          }).catch((err) => {
+            console.warn("company sources ingest failed", err);
           });
         }
         window.location.href = "app.html";

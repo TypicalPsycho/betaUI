@@ -1225,10 +1225,6 @@
         </label>
       </div>
       <div id="jdModalBlock">
-        <label class="field" style="margin-top:10px;">
-          <span>Company URL (optional, helps with company research)</span>
-          <input id="inputCompanyUrl" type="url" placeholder="https://company.com" />
-        </label>
         <div style="margin-top:12px;">
           <label class="field">
             <span>Upload job description in PDF, TXT or DOCX format only</span>
@@ -1239,6 +1235,23 @@
             <span>Paste job description text from other formats below</span>
             <textarea id="inputJdText" placeholder="Paste job description text here"></textarea>
           </label>
+        </div>
+        <div class="field" style="margin-top:16px;">
+          <span>Company Sources (optional but recommended)</span>
+          <div class="note" style="margin:6px 0 8px;">
+            Add up to three informative URLs from the company's website to enrich the system's understanding of the company.
+          </div>
+          <div class="company-sources">
+            <div class="row company-source-row" style="gap:8px; align-items:center;">
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/investors/earnings-release.pdf" style="flex:1;" />
+            </div>
+            <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/products.html" style="flex:1;" />
+            </div>
+            <div class="row company-source-row" style="gap:8px; align-items:center; margin-top:8px;">
+              <input class="company-source-url" type="url" placeholder="e.g. https://company.com/about" style="flex:1;" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1300,7 +1313,9 @@
             id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2),
             role: payload.role,
             company: payload.company,
-            stage: payload.stage || "screen"
+            stage: payload.stage || "screen",
+            companyUrl: payload.company_url || "",
+            companySources: Array.isArray(payload.company_sources) ? payload.company_sources : []
           };
           store.casefiles.push(cf);
           persist();
@@ -1311,6 +1326,13 @@
           store.u03[caseId] = { ...payload, createdAt: new Date().toISOString() };
           persist();
           return store.u03[caseId];
+        },
+        ingestCompanySources(caseId, sources){
+          if (!caseId || !sources || !sources.length) return;
+          store.companySources = store.companySources || {};
+          store.companySources[caseId] = sources;
+          persist();
+          return { ok: true, stored_count: sources.length };
         },
         listCasefilesByStage(){
           return [...store.casefiles];
@@ -1347,6 +1369,27 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
+          body: JSON.stringify(payload || {})
+        });
+        const text = await res.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (_err) {
+          data = { raw: text };
+        }
+        if (!res.ok){
+          const msg = data.detail || data.error || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        return data;
+      };
+      const postJsonKeepalive = async (path, payload) => {
+        const res = await fetch(`${API_BASE}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          keepalive: true,
           body: JSON.stringify(payload || {})
         });
         const text = await res.text();
@@ -1444,6 +1487,7 @@
           const role = payload?.role || "";
           const company = payload?.company || "";
           const companyUrl = payload?.company_url || "";
+          const companySources = Array.isArray(payload?.company_sources) ? payload.company_sources : [];
           const stage = payload?.stage || "screen";
           const userId = store.orch?.userId || store.me?.id || null;
           const userEmail = store.me?.email || "";
@@ -1455,6 +1499,7 @@
             company_name: company,
             role_title: role,
             company_url: companyUrl,
+            company_sources: companySources,
             stage
           };
           try{
@@ -1465,7 +1510,8 @@
               role,
               company,
               stage,
-              companyUrl
+              companyUrl,
+              companySources
             };
             store.casefiles = store.casefiles || [];
             store.casefiles.push(cf);
@@ -1494,6 +1540,21 @@
           };
           await postJson("/u03", jdPayload);
           return local.createU03(caseId, payload);
+        },
+        async ingestCompanySources(caseId, sources){
+          if (!caseId || !sources || !sources.length) return { ok: true, stored_count: 0 };
+          const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || null;
+          const userEmail = store.me?.email || "";
+          const orch = store.orch || { caseMap: {} };
+          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          await postJsonKeepalive("/u03/company_sources", {
+            user_id: userId,
+            user_email: userEmail,
+            case_id: serverCaseId,
+            sources
+          });
+          return local.ingestCompanySources(caseId, sources);
         },
         updateCasefileStage(caseId, stage){
           const store = UIStore.load();
@@ -1611,7 +1672,6 @@
 
     const inputRole = el("inputRole");
     const inputCompany = el("inputCompany");
-    const inputCompanyUrl = el("inputCompanyUrl");
     const inputJdFile = el("inputJdFile");
     const inputJdText = el("inputJdText");
     const jdModalBlock = el("jdModalBlock");
@@ -1918,7 +1978,10 @@
       modalBackdrop.style.display = "flex";
       inputRole.value = opts?.role || "";
       inputCompany.value = opts?.company || "";
-      if (inputCompanyUrl) inputCompanyUrl.value = "";
+      document.querySelectorAll(".company-source-row").forEach((row) => {
+        const urlEl = row.querySelector(".company-source-url");
+        if (urlEl) urlEl.value = "";
+      });
       if (inputJdFile) inputJdFile.value = "";
       if (inputJdText) inputJdText.value = "";
       if (jdModalBlock) jdModalBlock.style.display = "block";
@@ -1941,7 +2004,7 @@
       btnCreate.disabled = mode === "server" ? !(roleOk && companyOk) : !(roleOk && companyOk && jdOk);
     }
 
-    [inputRole, inputCompany, inputCompanyUrl, inputJdText].forEach(inp => {
+    [inputRole, inputCompany, inputJdText].forEach(inp => {
       if (!inp) return;
       inp.addEventListener("input", updateModalState);
     });
@@ -1966,7 +2029,13 @@
     btnCreate.addEventListener("click", async () => {
       const role = inputRole.value.trim();
       const company = inputCompany.value.trim();
-      const companyUrl = inputCompanyUrl?.value.trim() || "";
+      const sourceRows = Array.from(document.querySelectorAll(".company-source-row"));
+      const companySources = sourceRows.map((row) => {
+        const url = row.querySelector(".company-source-url")?.value.trim() || "";
+        if (!url) return null;
+        return { url };
+      }).filter(Boolean).slice(0, 3);
+      const companyUrl = companySources[0]?.url || "";
       const jdText = inputJdText?.value.trim() || "";
       if (!role || !company){
         showToast("Please enter both a role and company.");
@@ -1982,8 +2051,8 @@
         const serverCaseId = modalBackdrop.dataset.serverCaseId || "";
         const createdCaseId = modalBackdrop.dataset.createdCaseId || "";
         const cf = createdCaseId
-          ? { id: createdCaseId, role, company, stage: "screen", companyUrl }
-          : await DataAdapter.createCasefile({ role, company, stage: "screen", company_url: companyUrl });
+          ? { id: createdCaseId, role, company, stage: "screen", companyUrl, companySources }
+          : await DataAdapter.createCasefile({ role, company, stage: "screen", company_url: companyUrl, company_sources: companySources });
         if (mode === "server" && serverCaseId){
           const storeSnapshot = ensureOrchStore();
           const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
@@ -1995,6 +2064,11 @@
         modalBackdrop.dataset.createdCaseId = cf.id;
         if (mode !== "server" && jdText){
           await DataAdapter.createU03(cf.id, { jd_text: jdText });
+        }
+        if (companySources.length && mode !== "server"){
+          DataAdapter.ingestCompanySources(cf.id, companySources).catch((err) => {
+            console.warn("company sources ingest failed", err);
+          });
         }
         const refreshed = await refreshCasefiles();
         if (cf && cf.id && !refreshed.some((c) => c.id === cf.id)){
