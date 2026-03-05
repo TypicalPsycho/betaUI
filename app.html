@@ -2071,10 +2071,16 @@
         if (mode !== "server" && jdText){
           await DataAdapter.createU03(cf.id, { jd_text: jdText });
         }
-        if (companySources.length && mode !== "server"){
-          DataAdapter.ingestCompanySources(cf.id, companySources).catch((err) => {
-            console.warn("company sources ingest failed", err);
-          });
+        if (companySources.length){
+          DataAdapter.ingestCompanySources(cf.id, companySources)
+            .then((resp) => {
+              if (resp && resp.stored_count > 0){
+                showToast("Company sources synced.");
+              }
+            })
+            .catch((err) => {
+              console.warn("company sources ingest failed", err);
+            });
         }
         const refreshed = await refreshCasefiles();
         if (cf && cf.id && !refreshed.some((c) => c.id === cf.id)){
