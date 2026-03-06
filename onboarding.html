@@ -85,9 +85,46 @@
           <div class="note" style="margin:8px 0;">OR</div>
           <label class="field">
             <span>Paste resume text from other formats below</span>
-            <textarea placeholder="Paste resume text here"></textarea>
+            <textarea id="resumeText" placeholder="Paste resume text here"></textarea>
           </label>
 
+        </section>
+
+        <section class="card">
+          <h2 class="title" style="font-size:22px;">Storybook (optional, recommended)</h2>
+          <p class="subtitle">
+            Your Storybook complements your resume by giving SignalBench additional context about who you are, what you're
+            looking for, and what you've accomplished. Uploading biographies, summary profiles, project writeups, or career
+            narratives helps the system build a stronger understanding of your experience early—improving role fit analysis,
+            interview preparation, and more. You can update your Storybook anytime.
+          </p>
+          <div class="note" style="margin-top:8px;">Add up to two supporting items, such as a biography, extended resume, project summary, or career goals.</div>
+
+          <div class="row" style="flex-direction:column; gap:16px; margin-top:12px;">
+            <div class="storybook-item">
+              <label class="field">
+                <span>Upload storybook item (PDF, DOCX, TXT, or MD)</span>
+                <input id="storybookFile1" type="file" accept=".pdf,.docx,.txt,.md" />
+              </label>
+              <div class="note" style="margin:8px 0;">OR</div>
+              <label class="field">
+                <span>Paste storybook text</span>
+                <textarea id="storybookText1" placeholder="Paste a biography, summary profile, or extended background here"></textarea>
+              </label>
+            </div>
+
+            <div class="storybook-item">
+              <label class="field">
+                <span>Upload storybook item (PDF, DOCX, TXT, or MD)</span>
+                <input id="storybookFile2" type="file" accept=".pdf,.docx,.txt,.md" />
+              </label>
+              <div class="note" style="margin:8px 0;">OR</div>
+              <label class="field">
+                <span>Paste storybook text</span>
+                <textarea id="storybookText2" placeholder="Paste a project success story, career goals, or other helpful context here"></textarea>
+              </label>
+            </div>
+          </div>
         </section>
 
         <section class="card">
@@ -164,7 +201,11 @@
     const levelChecks = Array.from(document.querySelectorAll("input[name='level']"));
     const statusRadios = Array.from(document.querySelectorAll("input[name='status']"));
     const resumeFile = document.getElementById("resumeFile");
-    const resumeText = document.querySelector("textarea");
+    const resumeText = document.getElementById("resumeText");
+    const storybookFile1 = document.getElementById("storybookFile1");
+    const storybookFile2 = document.getElementById("storybookFile2");
+    const storybookText1 = document.getElementById("storybookText1");
+    const storybookText2 = document.getElementById("storybookText2");
     const preferredName = document.getElementById("preferredName");
     const profileImage = document.getElementById("profileImage");
     const profilePreview = document.getElementById("profilePreview");
@@ -179,6 +220,21 @@
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        const msg = data.detail || data.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+    const postForm = async (path, formData) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        credentials: "include",
+        body: formData
       });
       const text = await res.text();
       let data = {};
@@ -260,6 +316,25 @@
       return (resumeFile && resumeFile.files && resumeFile.files.length > 0) || (resumeText && resumeText.value.trim().length > 0);
     };
 
+    const isStorybookFileAllowed = (file) => {
+      const name = (file?.name || "").toLowerCase();
+      return name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".txt") || name.endsWith(".md");
+    };
+
+    const validateStorybookFile = (input) => {
+      const file = input?.files && input.files[0];
+      if (!file) return;
+      if (!isStorybookFileAllowed(file)){
+        alert("Storybook files must be PDF, DOCX, TXT, or MD.");
+        input.value = "";
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024){
+        alert("Storybook files must be 10MB or smaller.");
+        input.value = "";
+      }
+    };
+
     const updateState = () => {
       enforceLevelLimit();
       const levelCount = levelChecks.filter((c) => c.checked).length;
@@ -296,6 +371,12 @@
     });
     resumeText.addEventListener("input", updateState);
     preferredName?.addEventListener("input", updateState);
+    if (storybookFile1){
+      storybookFile1.addEventListener("change", () => validateStorybookFile(storybookFile1));
+    }
+    if (storybookFile2){
+      storybookFile2.addEventListener("change", () => validateStorybookFile(storybookFile2));
+    }
 
     btn.addEventListener("click", async () => {
       btn.disabled = true;
@@ -339,6 +420,26 @@
         postJson("/preferences", prefPayload).catch((err) => {
           console.warn("preferences save failed", err);
         });
+        const storybookItems = [
+          { file: storybookFile1?.files?.[0] || null, text: storybookText1?.value.trim() || "" },
+          { file: storybookFile2?.files?.[0] || null, text: storybookText2?.value.trim() || "" }
+        ].filter((item) => item.file || item.text);
+        if (storybookItems.length){
+          const form = new FormData();
+          form.append("user_id", store.me.id);
+          form.append("user_email", existingEmail);
+          if (storybookItems[0]){
+            if (storybookItems[0].text) form.append("storybook_text_1", storybookItems[0].text);
+            if (storybookItems[0].file) form.append("storybook_file_1", storybookItems[0].file, storybookItems[0].file.name);
+          }
+          if (storybookItems[1]){
+            if (storybookItems[1].text) form.append("storybook_text_2", storybookItems[1].text);
+            if (storybookItems[1].file) form.append("storybook_file_2", storybookItems[1].file, storybookItems[1].file.name);
+          }
+          await postForm("/u02/ingest_storybook", form).catch((err) => {
+            console.warn("storybook ingest failed", err);
+          });
+        }
         store.u01 = { createdAt: new Date().toISOString() };
         UIStore.save(store);
         window.location.href = "casefile_new.html";
