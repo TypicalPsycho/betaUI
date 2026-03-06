@@ -245,6 +245,13 @@
       }
       return data;
     };
+    const withTimeout = (promise, ms) => {
+      let timer;
+      const timeout = new Promise((resolve) => {
+        timer = setTimeout(() => resolve({ timeout: true }), ms);
+      });
+      return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+    };
     const extractText = async (file) => {
       const form = new FormData();
       form.append("file", file);
@@ -436,9 +443,15 @@
             if (storybookItems[1].text) form.append("storybook_text_2", storybookItems[1].text);
             if (storybookItems[1].file) form.append("storybook_file_2", storybookItems[1].file, storybookItems[1].file.name);
           }
-          await postForm("/u02/ingest_storybook", form).catch((err) => {
-            console.warn("storybook ingest failed", err);
-          });
+          await withTimeout(postForm("/u02/ingest_storybook", form), 6000)
+            .then((resp) => {
+              if (resp && resp.timeout){
+                console.warn("storybook ingest timed out");
+              }
+            })
+            .catch((err) => {
+              console.warn("storybook ingest failed", err);
+            });
         }
         store.u01 = { createdAt: new Date().toISOString() };
         UIStore.save(store);
