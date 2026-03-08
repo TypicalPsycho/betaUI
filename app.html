@@ -2789,7 +2789,11 @@
       renderMessages();
 
       const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
+      const turnId = (crypto.randomUUID
+        ? `turn-${crypto.randomUUID()}`
+        : `turn-${Date.now()}-${Math.random().toString(16).slice(2)}`);
       const payload = {
+        turn_id: turnId,
         user_message: text,
         user_email: storeSnapshot.me?.email || null,
         user_id: orch.userId || storeSnapshot.me?.id || null,
