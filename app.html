@@ -841,6 +841,10 @@
       gap:8px;
       flex:0 0 auto;
     }
+    .billing-banner-actions .btn{
+      white-space:nowrap;
+      min-width:max-content;
+    }
     .billing-banner-dismiss{
       border:none;
       background:transparent;
@@ -1661,6 +1665,13 @@
           const email = store.me?.email || "";
           const qs = userId ? `?user_id=${encodeURIComponent(userId)}&limit=50` : `?user_email=${encodeURIComponent(email)}&limit=50`;
           return getJson(`/u02${qs}`);
+        },
+        getBillingBalance(){
+          const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || "";
+          const email = store.me?.email || "";
+          const qs = userId ? `?user_id=${encodeURIComponent(userId)}` : `?user_email=${encodeURIComponent(email)}`;
+          return getJson(`/billing/balance${qs}`);
         }
       };
     };
@@ -1898,7 +1909,7 @@
 
     const refreshBillingWarning = async () => {
       try{
-        const resp = await getJson("/billing/balance");
+        const resp = await DataAdapter.getBillingBalance();
         const nextBalance = Number(resp?.available_credits);
         if (!Number.isFinite(nextBalance)) return;
         state.billingBalance = nextBalance;
@@ -1911,8 +1922,8 @@
         store.orch.billingNotice = notice;
         UIStore.save(store);
         renderBillingBanner();
-      } catch (_err){
-        // noop
+      } catch (err){
+        console.warn("billing warning refresh failed", err);
       }
     };
 
