@@ -1642,10 +1642,20 @@
             return local.ingestCompanySources(caseId, sources);
           }
         },
-        updateCasefileStage(caseId, stage){
+        async updateCasefileStage(caseId, stage){
           const store = UIStore.load();
+          const userId = store.orch?.userId || store.me?.id || null;
+          const userEmail = store.me?.email || "";
+          const orch = store.orch || { caseMap: {} };
+          const serverCaseId = orch.caseMap?.[caseId] || caseId;
+          await postJson("/casefiles/stage", {
+            user_id: userId,
+            user_email: userEmail,
+            case_id: serverCaseId,
+            stage
+          });
           store.casefiles = store.casefiles || [];
-          const cf = store.casefiles.find(c => c.id === caseId);
+          const cf = store.casefiles.find((entry) => entry.id === caseId);
           if (cf){
             cf.stage = stage;
           }
@@ -2394,15 +2404,26 @@
 
     // Optional: you can wire these to future “advance stage” actions
     // moveCasefile(caseId, "prepare") etc.
-    function moveCasefile(caseId, newStage){
+    async function moveCasefile(caseId, newStage){
       const cf = state.casefiles.find(c => c.id === caseId);
       if (!cf) return;
+      const previousStage = cf.stage;
+      if (previousStage === newStage) return;
       cf.stage = newStage;
-      DataAdapter.updateCasefileStage(caseId, newStage);
       render();
       setActive(caseId);
       ensureStageOpen(newStage);
-      showToast(`Moved casefile to ${stageLabel(newStage)}.`);
+      try{
+        await DataAdapter.updateCasefileStage(caseId, newStage);
+        showToast(`Moved casefile to ${stageLabel(newStage)}.`);
+      } catch (err){
+        cf.stage = previousStage;
+        render();
+        setActive(caseId);
+        ensureStageOpen(previousStage);
+        console.error("casefile stage update failed", { caseId, newStage, err });
+        showToast("Could not save casefile stage. Try again.");
+      }
     }
 
     // Message input: Enter sends, Shift+Enter adds a newline
