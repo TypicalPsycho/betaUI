@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SignalBench beta | Bench Credits</title>
+  <link rel="icon" href="https://signal-bench.com/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="https://signal-bench.com/SVG_ties_on_white.svg" />
+  <link rel="apple-touch-icon" href="https://signal-bench.com/apple-touch-icon.png" />
+  <link rel="manifest" href="icons/favicon/site.webmanifest?v=2026-03-03" />
+  <link rel="stylesheet" href="ui_shell.css?v=2026-03-01" />
+  <script src="ui_theme.js"></script>
+  <script src="ui_store.js"></script>
+  <script src="ui_guard.js?v=2026-02-28"></script>
+  <style>
+    .balance-value{font-size:44px; line-height:1; font-weight:700; letter-spacing:-0.03em;}
+    .plan-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;}
+    .plan-card{border:1px solid var(--soft); border-radius:16px; padding:18px; background:#fff; display:flex; flex-direction:column; gap:10px;}
+    .plan-price{font-size:28px; font-weight:700; letter-spacing:-0.02em;}
+    .plan-credits{font-size:15px; color:var(--muted);}
+    .status-line{min-height:20px; font-size:13px; color:var(--muted);}
+  </style>
+</head>
+<body data-page="balance">
+  <div class="wrap">
+    <div class="page">
+      <header class="page-header">
+        <div class="brand large">
+          <div class="brand-menu">
+            <button class="brand-logo" type="button" aria-label="Open navigation">
+              <img src="icons/SVG_ties_on_white.svg" alt="SignalBench logo" />
+            </button>
+            <div class="brand-panel" role="menu">
+              <a href="app.html" role="menuitem">App</a>
+              <a href="balance.html" role="menuitem">Balance</a>
+              <a href="settings.html" role="menuitem">Settings</a>
+              <a href="feedback.html" role="menuitem">Feedback</a>
+            </div>
+          </div>
+          <span class="brand-name">SignalBench</span>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <section class="card">
+          <h1 class="title">Bench Credits</h1>
+          <p class="subtitle">Bench Credits are used when you run analyses in SignalBench.</p>
+          <div class="balance-value" id="balanceValue">-</div>
+          <div class="note" id="balanceNote">Loading current balance...</div>
+        </section>
+
+        <section class="card">
+          <div class="row" style="justify-content:space-between; align-items:flex-end;">
+            <div>
+              <h2 class="title" style="font-size:22px;">Add Credits</h2>
+              <p class="subtitle">Plans are configured by the backend. Beta purchases do not collect payment information.</p>
+            </div>
+          </div>
+          <div class="status-line" id="purchaseStatus"></div>
+          <div class="plan-grid" id="plansGrid"></div>
+        </section>
+
+        <section class="card">
+          <p class="note" style="margin:0;">Bench Credits are promotional platform credits and are not redeemable for cash.</p>
+          <div class="row" style="margin-top:14px;">
+            <a class="btn press-invert" href="app.html">Return to App</a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.SB_API_BASE || "/api";
+    const balanceValue = document.getElementById("balanceValue");
+    const balanceNote = document.getElementById("balanceNote");
+    const plansGrid = document.getElementById("plansGrid");
+    const purchaseStatus = document.getElementById("purchaseStatus");
+
+    const getJson = async (path) => {
+      const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+      }
+      return data;
+    };
+
+    const postJson = async (path, payload) => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
+      if (!res.ok){
+        throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+      }
+      return data;
+    };
+
+    const fmtUsd = (cents) => {
+      const value = Number(cents || 0) / 100;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value);
+    };
+
+    const purchasePlan = async (planCode, button) => {
+      const idempotencyKey = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "Processing...";
+      purchaseStatus.textContent = "";
+      try{
+        const result = await postJson("/billing/purchase_beta", {
+          plan_code: planCode,
+          idempotency_key: idempotencyKey
+        });
+        await loadBalance();
+        purchaseStatus.textContent = `Added ${result.credits_awarded} Bench Credits.`;
+      } catch (err){
+        purchaseStatus.textContent = err?.message || "Could not complete purchase.";
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    };
+
+    const renderPlans = (plans) => {
+      plansGrid.innerHTML = "";
+      if (!Array.isArray(plans) || plans.length === 0){
+        plansGrid.innerHTML = '<div class="note">No plans are currently configured.</div>';
+        return;
+      }
+      plans.forEach((plan) => {
+        const card = document.createElement("section");
+        card.className = "plan-card";
+        card.innerHTML = `
+          <div class="plan-name" style="font-size:18px; font-weight:700;">${plan.display_name}</div>
+          <div class="plan-price">${fmtUsd(plan.usd_price_cents)}</div>
+          <div class="plan-credits">${plan.credits.toLocaleString()} Bench Credits</div>
+          <div class="note">Launch-ready purchase flow, with no card entry during beta.</div>
+        `;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn primary press-invert";
+        button.textContent = plan.button_label || "Purchase";
+        button.addEventListener("click", () => purchasePlan(plan.plan_code, button));
+        card.appendChild(button);
+        plansGrid.appendChild(card);
+      });
+    };
+
+    const loadBalance = async () => {
+      const data = await getJson("/billing/balance");
+      const credits = Number(data.available_credits || 0);
+      balanceValue.textContent = credits.toLocaleString();
+      balanceNote.textContent = credits > 0
+        ? "Your account is ready to run analyses."
+        : "Analyses pause when your balance is zero or below. Add credits to continue.";
+    };
+
+    const boot = async () => {
+      try{
+        const [balanceResp, plansResp] = await Promise.all([
+          getJson("/billing/balance"),
+          getJson("/billing/plans")
+        ]);
+        const credits = Number(balanceResp.available_credits || 0);
+        balanceValue.textContent = credits.toLocaleString();
+        balanceNote.textContent = credits > 0
+          ? "Your account is ready to run analyses."
+          : "Analyses pause when your balance is zero or below. Add credits to continue.";
+        renderPlans(plansResp.plans || []);
+      } catch (err){
+        balanceValue.textContent = "-";
+        balanceNote.textContent = err?.message || "Could not load billing data.";
+      }
+    };
+
+    boot();
+  </script>
+</body>
+</html>
