@@ -800,6 +800,67 @@
       flex-direction:column;
       gap:10px;
     }
+    .billing-banner{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      border:1px solid var(--soft);
+      border-radius:16px;
+      padding:12px 14px;
+      background:#f6f0e4;
+      box-shadow:0 8px 18px rgba(29,35,42,.08);
+    }
+    .billing-banner.show{display:flex;}
+    .billing-banner[data-level="low_100"]{
+      background:#f4e4d3;
+      border-color:#d8baa0;
+    }
+    .billing-banner[data-level="blocked"]{
+      background:#f3ddd7;
+      border-color:#d1a296;
+    }
+    .billing-banner-copy{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .billing-banner-title{
+      font-size:14px;
+      font-weight:700;
+    }
+    .billing-banner-text{
+      font-size:14px;
+      line-height:1.4;
+      color:var(--ink);
+    }
+    .billing-banner-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex:0 0 auto;
+    }
+    .billing-banner-dismiss{
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+      padding:2px 4px;
+    }
+    .billing-banner-dismiss[hidden]{display:none;}
+    @media (max-width: 768px){
+      .billing-banner{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .billing-banner-actions{
+        width:100%;
+        justify-content:flex-start;
+      }
+    }
     .inputbar{
       display:flex;
       align-items:center;
@@ -1180,6 +1241,16 @@
         </section>
 
         <div class="composer" aria-label="Composer">
+          <div class="billing-banner" id="billingBanner" data-level="low_500" aria-live="polite">
+            <div class="billing-banner-copy">
+              <div class="billing-banner-title" id="billingBannerTitle">Bench Credits are getting low</div>
+              <div class="billing-banner-text" id="billingBannerText">Add more on the Balance page to avoid interruptions.</div>
+            </div>
+            <div class="billing-banner-actions">
+              <a class="btn press-invert" id="billingBannerAction" href="balance.html">Open Balance</a>
+              <button class="billing-banner-dismiss" id="billingBannerDismiss" type="button" aria-label="Dismiss billing warning">×</button>
+            </div>
+          </div>
           <div class="composer-shell">
             <div class="compass" id="compass">
               <div class="compass-top">
@@ -1606,6 +1677,8 @@
       activeStage: "Screen",
       systemState: null,
       intentKey: null,
+      billingBalance: null,
+      billingWarningLevel: null,
       compass: {
         stage: "Screen",
         where: "No active casefile yet.",
@@ -1699,6 +1772,10 @@
     const markdownView = el("markdownView");
     const markdownContent = el("markdownContent");
     const composer = document.querySelector(".composer");
+    const billingBanner = el("billingBanner");
+    const billingBannerTitle = el("billingBannerTitle");
+    const billingBannerText = el("billingBannerText");
+    const billingBannerDismiss = el("billingBannerDismiss");
     const compassWhere = el("compassWhere");
     const compassSteps = el("compassSteps");
     const msgInput = el("msg");
@@ -1737,6 +1814,106 @@
       }
       const label = isCompact() ? "Casefile" : "Active Casefile";
       compassActive.textContent = `${label}: ${cf.role}, ${cf.company}`;
+    };
+
+    const billingWarningForBalance = (balance) => {
+      const credits = Number(balance);
+      if (!Number.isFinite(credits)) return null;
+      if (credits <= 0){
+        return {
+          level: "blocked",
+          title: "Bench Credits exhausted",
+          text: "Analyses are paused until you add more Bench Credits.",
+          dismissible: false
+        };
+      }
+      if (credits <= 100){
+        return {
+          level: "low_100",
+          title: "Bench Credits almost gone",
+          text: "You’re almost out of Bench Credits. Add more now to keep analyses running.",
+          dismissible: true
+        };
+      }
+      if (credits <= 500){
+        return {
+          level: "low_500",
+          title: "Bench Credits are getting low",
+          text: "Add more on the Balance page to avoid interruptions.",
+          dismissible: true
+        };
+      }
+      return null;
+    };
+
+    const readBillingNoticeState = () => {
+      const store = ensureOrchStore();
+      store.orch = store.orch || { userId: null, caseMap: {} };
+      store.orch.billingNotice = store.orch.billingNotice || {
+        lastBalance: null,
+        dismissedLevels: []
+      };
+      if (!Array.isArray(store.orch.billingNotice.dismissedLevels)){
+        store.orch.billingNotice.dismissedLevels = [];
+      }
+      return { store, notice: store.orch.billingNotice };
+    };
+
+    const renderBillingBanner = () => {
+      if (!billingBanner) return;
+      if (state.activeView !== "casefile"){
+        billingBanner.classList.remove("show");
+        return;
+      }
+      const warning = billingWarningForBalance(state.billingBalance);
+      state.billingWarningLevel = warning?.level || null;
+      if (!warning){
+        billingBanner.classList.remove("show");
+        return;
+      }
+      const { notice } = readBillingNoticeState();
+      const dismissed = Array.isArray(notice.dismissedLevels) ? notice.dismissedLevels : [];
+      if (warning.dismissible && dismissed.includes(warning.level)){
+        billingBanner.classList.remove("show");
+        return;
+      }
+      billingBanner.dataset.level = warning.level;
+      if (billingBannerTitle) billingBannerTitle.textContent = warning.title;
+      if (billingBannerText) billingBannerText.textContent = warning.text;
+      if (billingBannerDismiss) billingBannerDismiss.hidden = !warning.dismissible;
+      billingBanner.classList.add("show");
+    };
+
+    const dismissBillingBanner = () => {
+      const warning = billingWarningForBalance(state.billingBalance);
+      if (!warning || !warning.dismissible) return;
+      const { store, notice } = readBillingNoticeState();
+      const dismissed = new Set(Array.isArray(notice.dismissedLevels) ? notice.dismissedLevels : []);
+      dismissed.add(warning.level);
+      notice.dismissedLevels = Array.from(dismissed);
+      store.orch.billingNotice = notice;
+      UIStore.save(store);
+      renderBillingBanner();
+    };
+
+    const refreshBillingWarning = async () => {
+      try{
+        const resp = await getJson("/billing/balance");
+        const nextBalance = Number(resp?.available_credits);
+        if (!Number.isFinite(nextBalance)) return;
+        state.billingBalance = nextBalance;
+        const { store, notice } = readBillingNoticeState();
+        const previous = Number(notice.lastBalance);
+        if (Number.isFinite(previous) && nextBalance > previous){
+          notice.dismissedLevels = [];
+        }
+        notice.lastBalance = nextBalance;
+        store.orch.billingNotice = notice;
+        UIStore.save(store);
+        renderBillingBanner();
+      } catch (_err){
+        // noop
+      }
     };
 
     const formatDate = (value) => {
@@ -2101,6 +2278,10 @@
       }
     });
 
+    if (billingBannerDismiss){
+      billingBannerDismiss.addEventListener("click", dismissBillingBanner);
+    }
+
     function ensureStageOpen(stage){
       const details = document.querySelector(`details.stage[data-stage="${stage}"]`);
       if (details) details.open = true;
@@ -2265,6 +2446,7 @@
       chat.style.display = "flex";
       el("compass").style.display = isCasefile ? "flex" : "none";
       composer.style.display = isCasefile ? "flex" : "none";
+      renderBillingBanner();
       markdownView.style.display = "none";
       btnProfile.classList.toggle("active", view === "profile");
       btnStory.classList.toggle("active", view === "storybook");
@@ -2676,6 +2858,7 @@
       if (resp.assistant_message && assistantMsg){
         assistantMsg.content = resp.assistant_message;
       }
+      refreshBillingWarning();
     }
 
     async function streamTurn(payload, onDelta){
@@ -2946,6 +3129,7 @@
       await syncIdentity();
       await refreshProfileFromU01();
       ensureOrchStore();
+      await refreshBillingWarning();
       hydrateProfileCard();
       resizeMsg();
 
