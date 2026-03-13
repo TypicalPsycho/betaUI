@@ -19,6 +19,7 @@
     .plan-card{border:1px solid var(--soft); border-radius:16px; padding:18px; background:#fff; display:flex; flex-direction:column; gap:10px;}
     .plan-price{font-size:28px; font-weight:700; letter-spacing:-0.02em;}
     .plan-credits{font-size:15px; color:var(--muted);}
+    .plan-actions{display:flex; flex-direction:column; gap:10px; margin-top:auto;}
     .status-line{min-height:20px; font-size:13px; color:var(--muted);}
   </style>
 </head>
@@ -77,6 +78,7 @@
     const balanceNote = document.getElementById("balanceNote");
     const plansGrid = document.getElementById("plansGrid");
     const purchaseStatus = document.getElementById("purchaseStatus");
+    const checkoutParams = new URLSearchParams(window.location.search);
 
     const getJson = async (path) => {
       const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
@@ -136,6 +138,26 @@
       }
     };
 
+    const startStripeCheckout = async (planCode, button) => {
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "Redirecting...";
+      purchaseStatus.textContent = "";
+      try{
+        const result = await postJson("/billing/stripe/create-checkout-session", {
+          plan_code: planCode
+        });
+        if (!result.checkout_url){
+          throw new Error("Checkout URL was not returned.");
+        }
+        window.location.assign(result.checkout_url);
+      } catch (err){
+        purchaseStatus.textContent = err?.message || "Could not start card checkout.";
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    };
+
     const renderPlans = (plans) => {
       plansGrid.innerHTML = "";
       if (!Array.isArray(plans) || plans.length === 0){
@@ -149,14 +171,33 @@
           <div class="plan-name" style="font-size:18px; font-weight:700;">${plan.display_name}</div>
           <div class="plan-price">${fmtUsd(plan.usd_price_cents)}</div>
           <div class="plan-credits">${plan.credits.toLocaleString()} Bench Credits</div>
-          <div class="note">Launch-ready purchase flow, with no card entry during beta.</div>
+          <div class="note">${plan.paid_enabled ? "Launch-ready purchase flow, with hosted card checkout." : "Launch-ready purchase flow, with no card entry during beta."}</div>
         `;
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "btn primary press-invert";
-        button.textContent = plan.button_label || "Purchase";
-        button.addEventListener("click", () => purchasePlan(plan.plan_code, button));
-        card.appendChild(button);
+        const actions = document.createElement("div");
+        actions.className = "plan-actions";
+        if (plan.beta_enabled){
+          const betaButton = document.createElement("button");
+          betaButton.type = "button";
+          betaButton.className = "btn primary press-invert";
+          betaButton.textContent = plan.beta_button_label || plan.button_label || "Purchase";
+          betaButton.addEventListener("click", () => purchasePlan(plan.plan_code, betaButton));
+          actions.appendChild(betaButton);
+        }
+        if (plan.paid_enabled){
+          const paidButton = document.createElement("button");
+          paidButton.type = "button";
+          paidButton.className = "btn press-invert";
+          paidButton.textContent = plan.paid_button_label || "Pay with card";
+          paidButton.addEventListener("click", () => startStripeCheckout(plan.plan_code, paidButton));
+          actions.appendChild(paidButton);
+        }
+        if (!plan.beta_enabled && !plan.paid_enabled){
+          const unavailable = document.createElement("div");
+          unavailable.className = "note";
+          unavailable.textContent = "This plan is currently unavailable.";
+          actions.appendChild(unavailable);
+        }
+        card.appendChild(actions);
         plansGrid.appendChild(card);
       });
     };
@@ -172,6 +213,13 @@
 
     const boot = async () => {
       try{
+        if (checkoutParams.get("checkout") === "success"){
+          purchaseStatus.textContent = "Purchase completed. Your balance has been updated.";
+          window.history.replaceState({}, "", "balance.html");
+        } else if (checkoutParams.get("checkout") === "cancel"){
+          purchaseStatus.textContent = "Checkout canceled.";
+          window.history.replaceState({}, "", "balance.html");
+        }
         const [balanceResp, plansResp] = await Promise.all([
           getJson("/billing/balance"),
           getJson("/billing/plans")
