@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="ui_shell.css?v=2026-03-01" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_auth_config.js"></script>
+  <script src="ui_auth.js"></script>
   <script src="ui_guard.js?v=2026-02-28"></script>
   <style>
     .balance-value{font-size:44px; line-height:1; font-weight:700; letter-spacing:-0.03em;}
@@ -81,7 +83,7 @@
     const checkoutParams = new URLSearchParams(window.location.search);
 
     const getJson = async (path) => {
-      const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+      const res = await window.SBAuth.fetch(`${API_BASE}${path}`);
       const text = await res.text();
       let data = {};
       try { data = text ? JSON.parse(text) : {}; } catch (_err){ data = { raw: text }; }
@@ -92,10 +94,9 @@
     };
 
     const postJson = async (path, payload) => {
-      const res = await fetch(`${API_BASE}${path}`, {
+      const res = await window.SBAuth.fetch(`${API_BASE}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(payload || {})
       });
       const text = await res.text();

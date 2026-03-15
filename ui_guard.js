@@ -1,18 +1,34 @@
 // Shared route guard for beta flow.
 (() => {
   const page = document.body?.dataset?.page;
-  if (!page || !window.UIStore) return;
+  if (!page || !window.UIStore || !window.SBAuth) return;
 
   const API_BASE = window.SB_API_BASE || "/api";
+  const PUBLIC_PAGES = new Set(["landing", "auth", "privacy", "terms"]);
+
+  const redirect = (target) => {
+    if (!window.location.href.includes(target)) {
+      window.location.href = target;
+    }
+  };
+
+  const getSession = async () => {
+    try{
+      return await SBAuth.getSession();
+    } catch (_err){
+      return null;
+    }
+  };
 
   const hydrateIdentity = async () => {
     try{
-      const res = await fetch(`${API_BASE}/whoami`, { credentials: "include" });
-      if (!res.ok) return;
+      const res = await SBAuth.fetch(`${API_BASE}/whoami`);
+      if (!res.ok) return null;
       const data = await res.json();
-      if (!data || !data.email) return;
+      if (!data || !data.email) return null;
       UIStore.activateUser?.(data.email);
       const store = UIStore.load();
+      store.auth = { ...(store.auth || {}), isAuthed: true, provider: "supabase" };
       store.me = store.me || { id: data.user_id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), email: data.email };
       store.me.email = data.email;
       if (data.user_id){
@@ -23,7 +39,10 @@
         store.orch.userId = data.user_id;
       }
       UIStore.save(store);
-    }catch(_err){}
+      return data;
+    } catch (_err){
+      return null;
+    }
   };
 
   const hydrateRemoteState = async () => {
@@ -37,8 +56,8 @@
       else if (userEmail) params.set("user_email", userEmail);
       const query = params.toString();
       const [u01Res, caseRes] = await Promise.all([
-        fetch(`${API_BASE}/u01?${query}`, { credentials: "include" }),
-        fetch(`${API_BASE}/casefiles?${query}`, { credentials: "include" })
+        SBAuth.fetch(`${API_BASE}/u01?${query}`),
+        SBAuth.fetch(`${API_BASE}/casefiles?${query}`)
       ]);
       const next = UIStore.load();
       if (u01Res.ok){
@@ -53,15 +72,15 @@
     }catch(_err){}
   };
 
-  const redirect = (target) => {
-    if (!window.location.href.includes(target)) {
-      window.location.href = target;
-    }
-  };
-
-  const applyGuard = (store) => {
+  const applyGuard = (store, hasSession) => {
     const hasU01 = !!store.u01;
     const hasCasefiles = Array.isArray(store.casefiles) && store.casefiles.length > 0;
+
+    if (!hasSession){
+      if (PUBLIC_PAGES.has(page)) return;
+      redirect("auth.html");
+      return;
+    }
 
     if (page === "auth"){
       redirect("landing.html");
@@ -89,9 +108,18 @@
   };
 
   const bootstrap = async () => {
-    await hydrateIdentity();
-    await hydrateRemoteState();
-    applyGuard(UIStore.load());
+    const session = await getSession();
+    const hasSession = !!session?.access_token;
+    if (hasSession){
+      await hydrateIdentity();
+      await hydrateRemoteState();
+    } else {
+      const store = UIStore.load();
+      store.auth = { ...(store.auth || {}), isAuthed: false };
+      UIStore.save(store);
+    }
+    applyGuard(UIStore.load(), hasSession);
   };
+
   bootstrap();
 })();

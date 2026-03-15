@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="ui_shell.css?v=2026-03-01" />
   <script src="ui_theme.js"></script>
   <script src="ui_store.js"></script>
+  <script src="ui_auth_config.js"></script>
+  <script src="ui_auth.js"></script>
   <script src="ui_guard.js?v=2026-02-28"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
@@ -1145,7 +1147,7 @@
               <div class="menu-divider" role="separator"></div>
               <button id="btnProfileMenu" type="button" role="menuitem">My Profile</button>
               <button id="btnStoryMenu" type="button" role="menuitem">My Storybook</button>
-              <a href="https://signalbench.cloudflareaccess.com/cdn-cgi/access/logout" role="menuitem" data-logout="true">Logout</a>
+              <a href="auth.html" role="menuitem" data-logout="true">Logout</a>
             </div>
             </div>
             <span>SignalBench</span>
@@ -1224,7 +1226,7 @@
               <div class="menu-divider" role="separator"></div>
               <button id="btnProfile" type="button" role="menuitem">My Profile</button>
               <button id="btnStory" type="button" role="menuitem">My Storybook</button>
-              <a href="https://signalbench.cloudflareaccess.com/cdn-cgi/access/logout" role="menuitem" data-logout="true">Logout</a>
+              <a href="auth.html" role="menuitem" data-logout="true">Logout</a>
             </div>
           </div>
         </div>
@@ -1442,10 +1444,9 @@
 
     const ApiAdapter = (local) => {
       const postJson = async (path, payload) => {
-        const res = await fetch(`${API_BASE}${path}`, {
+        const res = await window.SBAuth.fetch(`${API_BASE}${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(payload || {})
         });
         const text = await res.text();
@@ -1462,10 +1463,9 @@
         return data;
       };
       const postJsonKeepalive = async (path, payload) => {
-        const res = await fetch(`${API_BASE}${path}`, {
+        const res = await window.SBAuth.fetch(`${API_BASE}${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           keepalive: true,
           body: JSON.stringify(payload || {})
         });
@@ -1483,7 +1483,7 @@
         return data;
       };
       const getJson = async (path) => {
-        const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+        const res = await window.SBAuth.fetch(`${API_BASE}${path}`);
         const text = await res.text();
         let data = {};
         try {
@@ -2015,9 +2015,8 @@
     const extractText = async (file) => {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`${API_BASE}/extract_text`, {
+      const res = await window.SBAuth.fetch(`${API_BASE}/extract_text`, {
         method: "POST",
-        credentials: "include",
         body: form
       });
       const text = await res.text();
@@ -2158,8 +2157,13 @@
     const logoutLinks = document.querySelectorAll("[data-logout='true']");
     if (logoutLinks.length){
       logoutLinks.forEach((link) => {
-        link.addEventListener("click", () => {
+        link.addEventListener("click", async (e) => {
+          e.preventDefault();
           clearLocalUIState();
+          try{
+            await window.SBAuth.signOut();
+          } catch (_err){}
+          window.location.href = "auth.html";
         });
       });
     }
@@ -2894,10 +2898,9 @@
     }
 
     async function streamTurn(payload, onDelta){
-      const res = await fetch(`${API_BASE}/turn_stream`, {
+      const res = await window.SBAuth.fetch(`${API_BASE}/turn_stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(payload || {})
       });
 
@@ -3117,7 +3120,7 @@
 
     const syncIdentity = async () => {
       try{
-        const res = await fetch(`${API_BASE}/whoami`, { credentials: "include" });
+        const res = await window.SBAuth.fetch(`${API_BASE}/whoami`);
         if (!res.ok) return;
         const data = await res.json();
         if (!data || !data.email) return;
