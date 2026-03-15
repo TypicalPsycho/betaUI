@@ -51,7 +51,7 @@
         const store = UIStore.load();
         const userId = store.orch?.userId || store.me?.id || null;
         const userEmail = store.me?.email || null;
-        if (!userId && !userEmail) return;
+        if (!userId && !userEmail) return { loaded: false, hasU01: false, hasCasefiles: false };
         const params = new URLSearchParams();
         if (userId) params.set("user_id", userId);
         else if (userEmail) params.set("user_email", userEmail);
@@ -61,21 +61,34 @@
           SBAuth.fetch(`${API_BASE}/casefiles?${query}`)
         ]);
         const next = UIStore.load();
+        let hasU01 = false;
+        let hasCasefiles = false;
         if (u01Res.ok){
           const u01Data = await u01Res.json();
-          if (u01Data?.u01) next.u01 = u01Data.u01;
+          if (u01Data?.u01){
+            next.u01 = u01Data.u01;
+            hasU01 = true;
+          }
         }
         if (caseRes.ok){
           const caseData = await caseRes.json();
-          if (Array.isArray(caseData?.casefiles)) next.casefiles = caseData.casefiles;
+          if (Array.isArray(caseData?.casefiles)){
+            next.casefiles = caseData.casefiles;
+            hasCasefiles = caseData.casefiles.length > 0;
+          }
         }
         UIStore.save(next);
-      }catch(_err){}
+        return { loaded: true, hasU01, hasCasefiles };
+      } catch (_err){
+        return { loaded: false, hasU01: false, hasCasefiles: false };
+      }
     };
 
-    const applyGuard = (store, hasSession) => {
-      const hasU01 = !!store.u01;
-      const hasCasefiles = Array.isArray(store.casefiles) && store.casefiles.length > 0;
+    const applyGuard = (store, hasSession, remoteState = null) => {
+      const hasU01 = remoteState?.loaded ? remoteState.hasU01 : !!store.u01;
+      const hasCasefiles = remoteState?.loaded
+        ? remoteState.hasCasefiles
+        : Array.isArray(store.casefiles) && store.casefiles.length > 0;
 
       if (!hasSession){
         if (PUBLIC_PAGES.has(page)) return;
@@ -96,6 +109,10 @@
         return;
       }
 
+      if (remoteState && !remoteState.loaded){
+        return;
+      }
+
       if (!hasU01){
         redirect("onboarding.html");
         return;
@@ -111,15 +128,16 @@
     const bootstrap = async () => {
       const session = await getSession();
       const hasSession = !!session?.access_token;
+      let remoteState = null;
       if (hasSession){
         await hydrateIdentity();
-        await hydrateRemoteState();
+        remoteState = await hydrateRemoteState();
       } else {
         const store = UIStore.load();
         store.auth = { ...(store.auth || {}), isAuthed: false };
         UIStore.save(store);
       }
-      applyGuard(UIStore.load(), hasSession);
+      applyGuard(UIStore.load(), hasSession, remoteState);
     };
 
     bootstrap();
