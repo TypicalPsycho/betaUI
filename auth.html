@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SignalBench beta | Sign In</title>
+  <link rel="icon" href="https://signal-bench.com/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="https://signal-bench.com/SVG_ties_on_white.svg" />
+  <link rel="apple-touch-icon" href="https://signal-bench.com/apple-touch-icon.png" />
+  <link rel="manifest" href="icons/favicon/site.webmanifest?v=2026-03-03" />
+  <link rel="stylesheet" href="ui_shell.css?v=2026-03-01" />
+  <script src="ui_theme.js"></script>
+  <script src="ui_store.js"></script>
+  <script src="ui_auth_config.js"></script>
+  <script src="ui_auth.js"></script>
+</head>
+<body data-page="auth">
+  <div class="wrap">
+    <div class="page">
+      <header class="page-header">
+        <div class="brand large">
+          <div class="brand-logo" aria-hidden="true">
+            <img src="icons/SVG_ties_on_white.svg" alt="SignalBench logo" />
+          </div>
+          <span class="brand-name">SignalBench</span>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <section class="card">
+          <h1 class="title">Private Beta Sign In</h1>
+          <p class="subtitle">
+            Enter your invited beta email address. We will send a one-time sign-in email to continue.
+          </p>
+        </section>
+
+        <section class="card">
+          <label class="field">
+            <span>Email address</span>
+            <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <div class="row" style="margin-top:16px;">
+            <button class="btn primary press-invert" id="btnSend" type="button">Send sign-in email</button>
+            <a class="btn press-invert" href="landing.html">Back</a>
+          </div>
+          <p class="note" id="authStatus" style="margin-top:12px;"></p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const emailInput = document.getElementById("emailInput");
+    const btnSend = document.getElementById("btnSend");
+    const authStatus = document.getElementById("authStatus");
+
+    const setStatus = (message, isError = false) => {
+      authStatus.textContent = message || "";
+      authStatus.style.color = isError ? "#b3261e" : "var(--muted)";
+    };
+
+    const redirectAfterSession = async () => {
+      try{
+        const session = await window.SBAuth.getSession();
+        if (!session?.access_token) return false;
+        window.location.href = "landing.html";
+        return true;
+      } catch (_err){
+        return false;
+      }
+    };
+
+    btnSend.addEventListener("click", async () => {
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email){
+        setStatus("Enter your invited beta email.", true);
+        return;
+      }
+      btnSend.disabled = true;
+      setStatus("Sending sign-in email...");
+      try{
+        await window.SBAuth.signInWithOtp(email);
+        setStatus("Check your email for the SignalBench sign-in link or code.");
+      } catch (err){
+        setStatus(err?.message || "Could not send sign-in email.", true);
+      } finally {
+        btnSend.disabled = false;
+      }
+    });
+
+    emailInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter"){
+        e.preventDefault();
+        btnSend.click();
+      }
+    });
+
+    redirectAfterSession();
+  </script>
+
+  <style>
+    .press-invert:active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .press-invert.primary:active{
+      background:#fff;
+      color:var(--accent);
+      border-color:var(--accent);
+    }
+  </style>
+</body>
+</html>
