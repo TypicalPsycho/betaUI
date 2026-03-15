@@ -61,6 +61,7 @@
     const { error } = await client.auth.signInWithOtp({
       email: normalized,
       options: {
+        shouldCreateUser: false,
         emailRedirectTo: cfg.redirectUrl || undefined,
       },
     });
