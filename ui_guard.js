@@ -113,6 +113,10 @@
         return;
       }
 
+      if (page === "app" && hasCasefiles){
+        return;
+      }
+
       if (!hasU01){
         redirect("onboarding.html");
         return;
