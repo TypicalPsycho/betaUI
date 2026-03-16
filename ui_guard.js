@@ -5,7 +5,7 @@
     if (!page || !window.UIStore || !window.SBAuth) return;
 
     const API_BASE = window.SB_API_BASE || "/api";
-    const PUBLIC_PAGES = new Set(["landing", "auth", "privacy", "terms"]);
+    const PUBLIC_PAGES = new Set(["auth", "privacy", "terms"]);
 
     const redirect = (target) => {
       if (!window.location.href.includes(target)) {
@@ -102,6 +102,10 @@
       }
 
       if (page === "landing"){
+        if (!hasSession){
+          redirect("auth.html");
+          return;
+        }
         if (hasU01){
           if (!hasCasefiles) redirect("casefile_new.html");
           else redirect("app.html");
@@ -114,6 +118,11 @@
       }
 
       if (page === "app" && hasCasefiles){
+        return;
+      }
+
+      if (page === "app" && hasU01 && !hasCasefiles){
+        redirect("casefile_new.html");
         return;
       }
 

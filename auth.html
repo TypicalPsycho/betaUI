@@ -42,7 +42,7 @@
           </label>
           <div class="row" style="margin-top:16px;">
             <button class="btn primary press-invert" id="btnSend" type="button">Send sign-in email</button>
-            <a class="btn press-invert" href="landing.html">Back</a>
+            <a class="btn press-invert" href="index.html">Back</a>
           </div>
           <p class="note" id="authStatus" style="margin-top:12px;"></p>
         </section>
@@ -64,7 +64,7 @@
       try{
         const session = await window.SBAuth.getSession();
         if (!session?.access_token) return false;
-        window.location.href = "landing.html";
+        window.location.href = "app.html";
         return true;
       } catch (_err){
         return false;
