@@ -95,6 +95,41 @@
       authStatus.style.color = isError ? "#b3261e" : "var(--muted)";
     };
 
+    const routeAuthenticatedUser = async () => {
+      try{
+        const whoamiRes = await window.SBAuth.fetch("/api/whoami");
+        if (!whoamiRes.ok){
+          window.location.href = "app.html";
+          return true;
+        }
+        const whoami = await whoamiRes.json();
+        const userId = whoami?.user_id || "";
+        const email = (whoami?.email || "").trim().toLowerCase();
+        const query = userId
+          ? `?user_id=${encodeURIComponent(userId)}`
+          : `?user_email=${encodeURIComponent(email)}`;
+        const [u01Res, caseRes] = await Promise.all([
+          window.SBAuth.fetch(`/api/u01${query}`),
+          window.SBAuth.fetch(`/api/casefiles${query}`),
+        ]);
+        const u01Data = u01Res.ok ? await u01Res.json() : {};
+        const caseData = caseRes.ok ? await caseRes.json() : {};
+        const hasU01 = !!u01Data?.u01;
+        const hasCasefiles = Array.isArray(caseData?.casefiles) && caseData.casefiles.length > 0;
+        if (!hasU01){
+          window.location.href = "onboarding.html";
+        } else if (!hasCasefiles){
+          window.location.href = "casefile_new.html";
+        } else {
+          window.location.href = "app.html";
+        }
+        return true;
+      } catch (_err){
+        window.location.href = "app.html";
+        return true;
+      }
+    };
+
     const normalizeCode = (value) => String(value || "").replace(/\D+/g, "").slice(0, 6);
 
     const updateVerifyState = () => {
@@ -125,7 +160,7 @@
       try{
         const session = await window.SBAuth.getSession();
         if (!session?.access_token) return false;
-        window.location.href = "app.html";
+        await routeAuthenticatedUser();
         return true;
       } catch (_err){
         return false;
@@ -169,7 +204,7 @@
       try{
         await window.SBAuth.verifyOtp(email, code);
         setStatus("Sign-in successful. Redirecting...");
-        window.location.href = "app.html";
+        await routeAuthenticatedUser();
       } catch (err){
         setStatus(err?.message || "Could not verify your sign-in code.", true);
         updateVerifyState();
