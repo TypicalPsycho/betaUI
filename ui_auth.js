@@ -69,6 +69,25 @@
     return true;
   };
 
+  const verifyOtp = async (email, token) => {
+    const client = await getClient();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedToken = String(token || "").replace(/\D+/g, "").trim();
+    if (!normalizedEmail) {
+      throw new Error("Email is required.");
+    }
+    if (normalizedToken.length !== 6) {
+      throw new Error("Enter the 6-digit code from your email.");
+    }
+    const { data, error } = await client.auth.verifyOtp({
+      email: normalizedEmail,
+      token: normalizedToken,
+      type: "email",
+    });
+    if (error) throw error;
+    return data || null;
+  };
+
   const signOut = async () => {
     if (!isConfigured()) return;
     const client = await getClient();
@@ -119,6 +138,7 @@
     getAccessToken,
     getUser,
     signInWithOtp,
+    verifyOtp,
     signOut,
     fetch: authFetch,
     json: authJson,
