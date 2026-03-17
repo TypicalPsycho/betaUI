@@ -1261,7 +1261,6 @@
             <div class="compass" id="compass">
               <div class="compass-top">
                 <span id="compassActive">No active casefile selected</span>
-                <span class="right compass-meta" id="compassStageMeta">System State: —</span>
               </div>
               <div class="compass-actions">
                 <span class="compass-label">Next, we can:</span>
@@ -1696,7 +1695,6 @@
       scrollMode: null, // "bottom" | "assistant-top"
       noCaseReminderCount: 0,
       activeStage: "Screen",
-      systemState: null,
       intentKey: null,
       billingBalance: null,
       billingWarningLevel: null,
@@ -1785,7 +1783,6 @@
 
     const activeCasefile = null;
     const compassActive = el("compassActive");
-    const compassStageMeta = el("compassStageMeta");
     const chat = el("chat");
     const chatEmpty = el("chatEmpty");
     const messagesEl = el("messages");
@@ -2538,11 +2535,6 @@
       return map[stage] || "Screen";
     }
 
-    function formatSystemState(value){
-      if (!value) return "—";
-      return String(value).toUpperCase();
-    }
-
     function updateCompass(cf){
       const stageKey = cf?.stage || "screen";
       const config = COMPASS_CONFIG[stageKey] || COMPASS_CONFIG.screen;
@@ -2552,11 +2544,6 @@
       state.intentKey = null;
 
       setCompassActiveText(cf);
-      const store = UIStore.load();
-      const stateMap = store.orch?.stateMap || {};
-      state.systemState = cf?.id ? (stateMap[cf.id] || null) : null;
-      if (compassStageMeta) compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
-
       state.compass = {
         stage,
         where: config.goal,
@@ -2840,7 +2827,6 @@
       }
       if (!store.orch) store.orch = { userId: null, caseMap: {} };
       if (!store.orch.caseMap) store.orch.caseMap = {};
-      if (!store.orch.stateMap) store.orch.stateMap = {};
       UIStore.save(store);
       return store;
     }
@@ -2877,16 +2863,6 @@
         } else if (activeServerId && activeServerId !== serverCaseId){
           openModal({ mode: "server", serverCaseId });
           showToast("Name the new casefile so it appears in your list.");
-        }
-      }
-      if (resp.state_executed){
-        orch.stateMap = orch.stateMap || {};
-        if (state.activeCaseId){
-          orch.stateMap[state.activeCaseId] = resp.state_executed;
-        }
-        state.systemState = resp.state_executed;
-        if (compassStageMeta){
-          compassStageMeta.textContent = `System State: ${formatSystemState(state.systemState)}`;
         }
       }
       storeSnapshot.orch = orch;
@@ -2972,12 +2948,14 @@
         return;
       }
       const storeSnapshot = ensureOrchStore();
+      const selectedActionId = state.compass.selectedStepLabel || null;
+      const userIntent = state.intentKey || null;
       const userMsg = DataAdapter.sendMessage(state.activeCaseId, {
         id: String(Date.now()) + Math.random().toString(16).slice(2),
         role: "user",
         content: text,
         createdAt: new Date().toISOString(),
-        intent_key: state.intentKey || null,
+        intent_key: userIntent,
         stage: state.activeStage,
         casefile_id: state.activeCaseId,
         has_u01: !!storeSnapshot.u01,
@@ -3016,8 +2994,8 @@
         user_email: storeSnapshot.me?.email || null,
         user_id: orch.userId || storeSnapshot.me?.id || null,
         case_id: orch.caseMap[state.activeCaseId] || state.activeCaseId || null,
-        selected_action_id: state.compass.selectedStepLabel || null,
-        user_intent: state.intentKey || null,
+        selected_action_id: selectedActionId,
+        user_intent: userIntent,
         client_state_hint: stageToState(state.activeStage)
       };
 
