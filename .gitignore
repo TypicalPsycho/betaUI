@@ -1,3 +1,8 @@
 # Ignore archived pages (not deployed)
 archive/
 demo_router.html
+doc_register/doc_register_active.csv
+doc_register/doc_register_master.csv
+doc_register/doc_register_summary.md
+signalbench_staging_and_rollout_plan_3-19-26.md
+tools/build_doc_register.py

@@ -2873,6 +2873,12 @@
       refreshBillingWarning();
     }
 
+    function extractTurnErrorMessage(err){
+      const raw = String(err?.message || err?.detail || err || "").trim();
+      const match = raw.match(/.*Error 15\d{2}\.?$/i);
+      return match ? match[0] : "";
+    }
+
     async function streamTurn(payload, onDelta){
       const res = await window.SBAuth.fetch(`${API_BASE}/turn_stream`, {
         method: "POST",
@@ -2930,6 +2936,9 @@
             donePayload = data;
           }
         }
+      }
+      if (!donePayload){
+        throw new Error("The response stream ended unexpectedly. Please try your prompt again. Error 1507.");
       }
       return donePayload;
     }
@@ -3002,7 +3011,6 @@
       try{
         let sawDelta = false;
         let lastRender = 0;
-        let usedStreaming = false;
         const renderStreaming = (force=false) => {
           const now = Date.now();
           if (force || now - lastRender > 120){
@@ -3036,10 +3044,14 @@
         let resp = null;
         try{
           resp = await streamTurn(payload, onDelta);
-          usedStreaming = true;
         } catch (streamErr){
           if (!sawDelta){
-            resp = await DataAdapter.sendTurn(payload);
+            try{
+              resp = await DataAdapter.sendTurn(payload);
+            } catch (fallbackErr){
+              const specific = extractTurnErrorMessage(fallbackErr) || extractTurnErrorMessage(streamErr);
+              throw new Error(specific || "The live response failed, and the system could not complete the retry. Please try again. Error 1508.");
+            }
           } else {
             throw streamErr;
           }
@@ -3047,10 +3059,13 @@
         applyTurnResponse(resp, storeSnapshot, assistantMsg, payload);
         renderStreaming(true);
       } catch (err){
+        const errorText = extractTurnErrorMessage(err) || "The system could not complete your request. Please try again. Error 1500.";
         if (assistantMsg.content && assistantMsg.content !== "Thinking..."){
-          assistantMsg.content += "\n\nThe system took too long to respond. Please try your prompt again. Error 1500.";
+          if (!assistantMsg.content.includes(errorText)){
+            assistantMsg.content += `\n\n${errorText}`;
+          }
         } else {
-          assistantMsg.content = "The system took too long to respond. Please try your prompt again. Error 1500.";
+          assistantMsg.content = errorText;
         }
         showToast(err?.message || "Request failed.");
       } finally {

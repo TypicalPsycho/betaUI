@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SignalBench | Before You Apply, Know If You'll Be Taken Seriously</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta
+    name="description"
+    content="Test a role before you apply. SignalBench compares your background to the role, shows the gaps hiring managers will notice, and helps you strengthen your application before you spend a shot."
+  />
+  <meta
+    name="keywords"
+    content="job search, role fit, resume tailoring, role viability, job application, hiring manager signals, generic AI, application strategy"
+  />
+  <meta name="msvalidate.01" content="E09D03292372EE7624B7928247EF35E5" />
+  <meta property="og:title" content="SignalBench | Before You Apply, Know If You'll Be Taken Seriously" />
+  <meta
+    property="og:description"
+    content="See if the role is worth pursuing, what hiring managers will notice, and what to change before you apply."
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.signal-bench.com/index4.html" />
+  <meta property="og:image" content="https://www.signal-bench.com/logo1.png" />
+  <link rel="canonical" href="https://www.signal-bench.com/index4.html" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    .hero-helper {
+      margin: 18px 0 0;
+      color: var(--text-faint);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .hero-banner {
+      grid-column: 1 / -1;
+      max-width: 980px;
+      margin-bottom: -6px;
+    }
+
+    .hero-banner h1 {
+      max-width: none;
+    }
+
+    .persona-shell .frame-body {
+      padding: 20px;
+    }
+
+    .video-shell .frame-body {
+      padding: 16px;
+    }
+
+    .persona-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .persona-tab {
+      min-height: 58px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(214, 220, 230, 0.98);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-soft);
+      font-size: 0.93rem;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .persona-tab:hover,
+    .persona-tab:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(35, 58, 122, 0.28);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      color: var(--text);
+      outline: none;
+    }
+
+    .persona-tab.is-active {
+      border-color: rgba(35, 58, 122, 0.28);
+      background: rgba(35, 58, 122, 0.09);
+      color: var(--text);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    .persona-panel {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(214, 220, 230, 0.98);
+      background: rgba(255, 255, 255, 0.93);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .persona-panel[hidden] {
+      display: none;
+    }
+
+    .persona-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .persona-block {
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: rgba(241, 244, 249, 0.9);
+      border: 1px solid rgba(214, 220, 230, 0.98);
+    }
+
+    .persona-block h3 {
+      margin: 0 0 10px;
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .persona-block p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.68;
+      font-size: 1rem;
+    }
+
+    .persona-close {
+      margin-top: 18px;
+      color: var(--text);
+      font-size: 0.97rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .video-poster {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      border-radius: calc(var(--radius-lg) - 2px);
+      background: linear-gradient(180deg, rgba(247, 249, 252, 0.98), rgba(238, 242, 248, 0.96));
+      border: 1px solid rgba(214, 220, 230, 0.98);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .video-poster video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
+      display: block;
+      background: #eef2f7;
+      cursor: pointer;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.08), rgba(17, 24, 39, 0.22));
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .play-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--text);
+      font-size: 0.94rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(214, 220, 230, 0.98);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .play-badge:hover,
+    .play-badge:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+      border-color: rgba(35, 58, 122, 0.28);
+      outline: none;
+    }
+
+    .play-icon {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    .play-icon::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-left: 11px solid #fff;
+      transform: translate(-35%, -50%);
+    }
+
+    .play-copy {
+      display: grid;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .play-title {
+      display: block;
+      color: var(--text);
+      font-size: 0.96rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .play-subtitle {
+      display: block;
+      color: var(--text-faint);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .video-caption {
+      margin-top: 16px;
+      color: var(--text-faint);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .video-shell .play-badge {
+      backdrop-filter: blur(10px);
+    }
+
+    .video-poster.is-playing .video-overlay {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .proof-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    @media (max-width: 1080px) {
+      .persona-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .hero-banner {
+        margin-bottom: 0;
+      }
+
+      .persona-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .persona-tabs {
+        grid-template-columns: 1fr;
+      }
+
+      .persona-shell .frame-body,
+      .video-shell .frame-body {
+        padding: 16px;
+      }
+
+      .persona-panel {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="site-shell" id="top">
+    <header class="site-header" data-site-header>
+      <div class="header-inner">
+        <a class="brand-lockup" href="#top" aria-label="SignalBench home">
+          <img src="/SVG_ties_on_white.svg" alt="SignalBench logo" />
+          <span class="brand-name">SignalBench</span>
+        </a>
+        <nav class="header-nav" aria-label="Primary">
+          <a href="#shift">The Shift</a>
+          <a href="#personas">Who It's For</a>
+          <a href="#how-it-works">How it Works</a>
+          <a href="#product-proof">Product Proof</a>
+        </nav>
+        <div class="header-actions">
+          <a class="button button-primary" href="/beta/">Try one role</a>
+          <button
+            class="menu-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+            aria-label="Open navigation"
+            data-menu-toggle
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 6H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M4 14H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="menu-panel" id="mobile-menu" data-menu-panel>
+          <nav aria-label="Mobile">
+            <a class="button button-secondary" href="#shift">The Shift</a>
+            <a class="button button-secondary" href="#personas">Who It's For</a>
+            <a class="button button-secondary" href="#how-it-works">How it Works</a>
+            <a class="button button-secondary" href="#product-proof">Product Proof</a>
+          </nav>
+          <a class="button button-primary" href="/beta/">Try one role</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <div class="hero-grid">
+            <div class="hero-banner">
+              <div class="eyebrow">For serious job searches</div>
+              <h1>Before you apply, know if you'll be taken seriously.</h1>
+            </div>
+
+            <div class="hero-copy">
+              <p class="lead">
+                SignalBench compares your background to the role and shows you your real fit, the gaps hiring
+                managers will notice, and what to change before you spend a shot.
+              </p>
+              <div class="hero-actions hero-actions-centered">
+                <a class="button button-primary" href="#how-it-works">See how it works</a>
+                <a class="button button-secondary" href="/beta/">Try one role</a>
+              </div>
+              <p class="hero-helper">Bring one resume and one job description. First value should come fast.</p>
+              <div class="hero-meta">
+                <div class="meta-pill">Real fit</div>
+                <div class="meta-pill">Visible gaps</div>
+                <div class="meta-pill">Better shots</div>
+              </div>
+            </div>
+
+            <div class="frame hero-frame" aria-label="SignalBench role fit analysis">
+              <div class="frame-header">
+                <div class="frame-label">Role fit and signal analysis</div>
+                <div class="frame-aside">Hover to inspect</div>
+              </div>
+              <div class="frame-body frame-media screenshot-stage">
+                <img
+                  class="screenshot-image"
+                  src="/hero1.jpg"
+                  alt="SignalBench role fit analysis showing role viability, visible gaps, and next steps before applying."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="shift">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Market shift</div>
+            <h2>The old job search doesn't work like it used to.</h2>
+            <p>
+              Applying broadly used to be rational. Volume mattered more. Today recruiters scan faster, AI-generated
+              resumes flood the market, and generic applications disappear. The issue is no longer just how many jobs
+              you apply to. It is whether your signal matches the role quickly enough to get noticed.
+            </p>
+          </div>
+          <div class="prompt-banner">It's not just a numbers game anymore. It's a signal game.</div>
+          <div class="section-grid-3">
+            <article class="surface-card">
+              <h3>More resumes</h3>
+              <p>Every opening attracts more volume, more repetition, and more lookalike applications than it used to.</p>
+            </article>
+            <article class="surface-card">
+              <h3>Less recruiter attention</h3>
+              <p>Decision-makers move fast. If the match is not clear quickly, the role moves on without you.</p>
+            </article>
+            <article class="surface-card">
+              <h3>Generic applications disappear</h3>
+              <p>A broad resume and vague positioning create motion, but often not enough signal to earn a serious look.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Behavior change</div>
+            <h2>The product changes workflow, not just wording.</h2>
+            <p>
+              SignalBench is built to change what you do before you apply: which roles you choose, how you read the
+              opportunity, and how you decide whether your background will land the way you think it will.
+            </p>
+          </div>
+          <div class="comparison-grid">
+            <article class="comparison-card" data-tone="soft">
+              <h3>Old approach</h3>
+              <ul class="comparison-list">
+                <li>Apply broadly</li>
+                <li>Use one general resume</li>
+                <li>Hope recruiters connect the dots</li>
+                <li>Spend time on roles that may never be viable</li>
+              </ul>
+              <p class="caption-line">More activity does not always mean better odds.</p>
+            </article>
+            <article class="comparison-card" data-tone="accent">
+              <h3>SignalBench approach</h3>
+              <ul class="signal-list">
+                <li>Check if the role is worth pursuing</li>
+                <li>See what hiring managers are likely to notice</li>
+                <li>Tailor your story faster and more truthfully</li>
+                <li>Apply more selectively with stronger signal</li>
+              </ul>
+              <p class="caption-line">Less blind applying. Better shots. Stronger signal.</p>
+            </article>
+          </div>
+          <div class="detail-grid detail-grid-single" style="margin-top: 18px;">
+            <article class="detail-card">
+              <h3>From blind volume to informed precision.</h3>
+              <p>
+                The goal is not to slow you down for its own sake. The goal is to spend a little time up front so you
+                can stop wasting hours on the wrong role.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="personas">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Start from your problem</div>
+            <h2>Different frustrations. Same first move.</h2>
+            <p>
+              People arrive at SignalBench with different anxieties, but the entry point is the same: test one role
+              properly before you spend a shot.
+            </p>
+          </div>
+          <div class="frame persona-shell" aria-label="Persona entry points for SignalBench">
+            <div class="frame-header">
+              <div class="frame-label">Choose the mindset that sounds most like you</div>
+              <div class="frame-aside">Interactive preview</div>
+            </div>
+            <div class="frame-body">
+              <div class="persona-tabs" role="tablist" aria-label="SignalBench entry points">
+                <button class="persona-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="persona-fast" id="tab-fast" data-persona-tab="fast">
+                  I need to move fast
+                </button>
+                <button class="persona-tab" type="button" role="tab" aria-selected="false" aria-controls="persona-ai" id="tab-ai" data-persona-tab="ai">
+                  I'm tired of generic AI
+                </button>
+                <button class="persona-tab" type="button" role="tab" aria-selected="false" aria-controls="persona-rigor" id="tab-rigor" data-persona-tab="rigor">
+                  I want rigor, not fluff
+                </button>
+                <button class="persona-tab" type="button" role="tab" aria-selected="false" aria-controls="persona-networking" id="tab-networking" data-persona-tab="networking">
+                  I'm tired of networking noise
+                </button>
+                <button class="persona-tab" type="button" role="tab" aria-selected="false" aria-controls="persona-strategic" id="tab-strategic" data-persona-tab="strategic">
+                  I'm thinking strategically
+                </button>
+              </div>
+
+              <section class="persona-panel" id="persona-fast" role="tabpanel" aria-labelledby="tab-fast" data-persona-panel="fast">
+                <div class="persona-grid">
+                  <div class="persona-block">
+                    <h3>What that usually feels like</h3>
+                    <p>You do not want another week spent tailoring roles that were never likely to land in the first place.</p>
+                  </div>
+                  <div class="persona-block">
+                    <h3>How SignalBench helps</h3>
+                    <p>Quickly decide which opportunities deserve real effort and which ones should be dropped before they drain more time.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="persona-panel" id="persona-ai" role="tabpanel" aria-labelledby="tab-ai" data-persona-panel="ai" hidden>
+                <div class="persona-grid">
+                  <div class="persona-block">
+                    <h3>What that usually feels like</h3>
+                    <p>You are tired of polished suggestions that never answer whether the role is actually viable for you.</p>
+                  </div>
+                  <div class="persona-block">
+                    <h3>How SignalBench helps</h3>
+                    <p>Generic AI improves wording. SignalBench shows what hiring managers are likely to infer from your background.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="persona-panel" id="persona-rigor" role="tabpanel" aria-labelledby="tab-rigor" data-persona-panel="rigor" hidden>
+                <div class="persona-grid">
+                  <div class="persona-block">
+                    <h3>What that usually feels like</h3>
+                    <p>You want a cleaner read on fit, risk, and positioning before you spend time, effort, or credibility.</p>
+                  </div>
+                  <div class="persona-block">
+                    <h3>How SignalBench helps</h3>
+                    <p>Pressure-test the match, surface missing evidence, and tighten your positioning before you apply or interview.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="persona-panel" id="persona-networking" role="tabpanel" aria-labelledby="tab-networking" data-persona-panel="networking" hidden>
+                <div class="persona-grid">
+                  <div class="persona-block">
+                    <h3>What that usually feels like</h3>
+                    <p>You have collected too many opinions and still do not know what the role really demands or why traction is weak.</p>
+                  </div>
+                  <div class="persona-block">
+                    <h3>How SignalBench helps</h3>
+                    <p>Stop collecting noise. Focus on the role, your evidence, and the specific gaps that matter before you move forward.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="persona-panel" id="persona-strategic" role="tabpanel" aria-labelledby="tab-strategic" data-persona-panel="strategic" hidden>
+                <div class="persona-grid">
+                  <div class="persona-block">
+                    <h3>What that usually feels like</h3>
+                    <p>You are not chasing motion. You are deciding where to place your next serious shot and where not to.</p>
+                  </div>
+                  <div class="persona-block">
+                    <h3>How SignalBench helps</h3>
+                    <p>Evaluate opportunities with evidence instead of instinct so you can spend time where the leverage is real.</p>
+                  </div>
+                </div>
+              </section>
+
+              <p class="persona-close">Different starting points. Same core action: test one role properly before you apply.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="how-it-works">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">See it quickly</div>
+            <h2>From first login to first useful answer in 45 seconds.</h2>
+            <p>
+              This demo shows the lean path through SignalBench: log in, upload a resume, add one job description,
+              and run Check Fit. You can skip biography, company links, and extra profile detail at first, then add
+              them later when you want deeper analysis.
+            </p>
+          </div>
+          <div class="detail-grid">
+            <div class="frame video-shell" aria-label="Short SignalBench walkthrough demo">
+              <div class="frame-header">
+                <div class="frame-label">Login to first response</div>
+                <div class="frame-aside">45-second demo</div>
+              </div>
+              <div class="frame-body">
+                <div class="video-poster" data-demo-poster>
+                  <video
+                    muted
+                    loop
+                    playsinline
+                    preload="auto"
+                    aria-label="SignalBench onboarding demo from login to first useful response"
+                    data-demo-video
+                  >
+                    <source src="/mtv3.mp4" type="video/mp4" />
+                  </video>
+                  <div class="video-overlay" data-demo-overlay>
+                    <button class="play-badge" type="button" data-demo-play aria-label="Play 45-second SignalBench demo">
+                      <span class="play-icon" aria-hidden="true"></span>
+                      <span class="play-copy">
+                        <span class="play-title">45-Second Demo</span>
+                        <span class="play-subtitle">Login to first useful answer</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <p class="video-caption">
+                  No audio. No cuts. Just the exact first-pass workflow from login to the first useful system response.
+                </p>
+              </div>
+            </div>
+            <article class="detail-card">
+              <h3>Why this is easy to try</h3>
+              <ul class="signal-list">
+                <li>Start with the minimum: login, resume, job description, and Check Fit.</li>
+                <li>No biography, profile photo, or company research is required for the first pass.</li>
+                <li>Add biography, business URLs, and company facts later when a role deserves deeper work.</li>
+                <li>Fast enough for quick screening. Flexible enough for serious opportunities.</li>
+              </ul>
+            </article>
+          </div>
+          <div class="prompt-banner">Start with the essentials. Add depth only when the role deserves it.</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">First value</div>
+            <h2>In your first session, you should leave with something that matters.</h2>
+            <p>
+              The first promise is simple: one useful answer, one visible gap, or one positioning move that changes the
+              quality of your next application.
+            </p>
+          </div>
+          <div class="section-grid-3">
+            <article class="surface-card">
+              <h3>Should I apply?</h3>
+              <p>A clearer answer on whether the role looks viable, risky, or not worth pursuing.</p>
+            </article>
+            <article class="surface-card">
+              <h3>What's missing?</h3>
+              <p>The evidence or experience the role may require you to signal more explicitly.</p>
+            </article>
+            <article class="surface-card">
+              <h3>What should I change?</h3>
+              <p>Specific positioning moves to make before you apply or interview.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Why it is worth it</div>
+            <h2>Yes, this takes longer than clicking Apply.</h2>
+            <p>
+              A generic application takes minutes. A truthful, role-aligned application often takes hours. Most people
+              skip the thinking, send a broad resume, and never get seen. SignalBench helps you spend a little time up
+              front so you can stop wasting a lot of time later.
+            </p>
+          </div>
+          <div class="comparison-grid">
+            <article class="comparison-card" data-tone="soft">
+              <h3>Five-minute apply</h3>
+              <ul class="comparison-list">
+                <li>Use the same general resume</li>
+                <li>Send the application quickly</li>
+                <li>Hope the relevance is obvious</li>
+                <li>Risk spending more time on the wrong role later</li>
+              </ul>
+              <p class="caption-line">Fast to send. Easy to ignore.</p>
+            </article>
+            <article class="comparison-card" data-tone="accent">
+              <h3>15-minute SignalBench pass</h3>
+              <ul class="signal-list">
+                <li>Decide whether the role deserves deeper effort</li>
+                <li>Sharpen your signal faster</li>
+                <li>Avoid tailoring the wrong opportunity for hours</li>
+                <li>Move forward with a stronger application if the role is real</li>
+              </ul>
+              <p class="caption-line">A little slower up front. Much stronger leverage.</p>
+            </article>
+          </div>
+          <div class="prompt-banner">Spend 15 minutes to apply more intelligently, not 5 minutes to be ignored.</div>
+        </div>
+      </section>
+
+      <section class="section" id="product-proof">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Product proof</div>
+            <h2>See what hiring managers are likely to see.</h2>
+            <p>
+              SignalBench turns your resume, role, and career evidence into a role-centered analysis so you can see
+              what looks strong, what may be under-signaled, and what to change before moving forward.
+            </p>
+          </div>
+          <div class="showcase-grid">
+            <div class="frame showcase-frame">
+              <div class="frame-header">
+                <div class="frame-label">What the role is likely to see</div>
+                <div class="frame-aside">Hover to inspect</div>
+              </div>
+              <div class="frame-body frame-media screenshot-stage">
+                <img
+                  class="screenshot-image"
+                  src="/hero4.jpg"
+                  alt="SignalBench analysis showing missing evidence, under-signaled strengths, and how a role may read your background."
+                />
+              </div>
+            </div>
+            <div class="proof-stack">
+              <article class="detail-card">
+                <h3>Fit thesis</h3>
+                <p>A clearer read on whether the role looks truly viable, marginal, or not worth pursuing.</p>
+              </article>
+              <article class="detail-card">
+                <h3>Missing evidence</h3>
+                <p>The experience, scope, or outcomes that may be present in your background but not visible fast enough.</p>
+              </article>
+              <article class="detail-card">
+                <h3>Positioning moves</h3>
+                <p>What to reframe, strengthen, or surface before you apply so the story lands more clearly.</p>
+              </article>
+            </div>
+          </div>
+          <p class="frame-note">This is a concrete product artifact, not vague chat output.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div class="eyebrow">Generic AI vs SignalBench</div>
+            <h2>Same resume. Same role. Very different output.</h2>
+            <p>
+              The difference is not whether AI can write polished language. It is whether the output helps you get
+              taken seriously before you apply.
+            </p>
+          </div>
+          <div class="prompt-banner">Same resume. Same job description. Same prompt. Different result.</div>
+          <div class="comparison-grid">
+            <article class="comparison-card" data-tone="soft">
+              <h3>Generic AI</h3>
+              <p>
+                Based on the job description, the candidate appears to have several relevant qualifications.
+                Leadership experience and strategic planning exposure may make them a strong fit for the role.
+                Consider highlighting these strengths more clearly in the resume and during the interview process.
+              </p>
+              <div class="signal-section">
+                <ul class="comparison-list">
+                  <li>Polished and positive</li>
+                  <li>Broad observations</li>
+                  <li>Weak on actual viability</li>
+                  <li>Little help deciding what to do next</li>
+                </ul>
+              </div>
+            </article>
+            <article class="comparison-card" data-tone="accent">
+              <h3>SignalBench</h3>
+              <div class="signal-section">
+                <h4>Should you pursue this role?</h4>
+                <ul class="signal-list">
+                  <li>This looks viable, but only if the resume more clearly signals budget ownership and cross-functional leadership.</li>
+                </ul>
+              </div>
+              <div class="signal-section">
+                <h4>What hiring managers may miss quickly</h4>
+                <ul class="signal-list">
+                  <li>The candidate has relevant operating scale, but it is under-signaled and may be screened out early.</li>
+                </ul>
+              </div>
+              <div class="signal-section">
+                <h4>What to change before applying</h4>
+                <ul class="signal-list">
+                  <li>Reframe two experience areas around the role's actual mandate and strengthen the evidence tied to economic ownership.</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+          <div class="detail-grid detail-grid-single" style="margin-top: 18px;">
+            <article class="detail-card">
+              <h3>Generic AI makes you sound better. SignalBench helps you get taken seriously.</h3>
+              <p>
+                That is the difference between polished language and a stronger shot at being seen the way the role
+                actually needs to see you.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="closing-card">
+            <div class="section-heading" style="margin-bottom: 18px;">
+              <div class="eyebrow">Final close</div>
+              <h2>Before you apply, know if you'll be taken seriously.</h2>
+            </div>
+            <p>
+              Fewer wasted shots. Stronger signal. Clearer role selection. Better tailoring leverage before you spend
+              the hours that a serious application really takes.
+            </p>
+            <div class="prompt-banner" style="margin-top: 22px;">It's not a numbers game anymore. It's a signal game.</div>
+            <div class="cta-row" style="margin-top: 24px;">
+              <a class="button button-primary" href="/beta/">Try one role</a>
+              <a class="button button-secondary" href="#how-it-works">See how it works</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-links">
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="/beta/">Beta</a>
+          <a href="mailto:signal-bench@outlook.com">Contact</a>
+        </div>
+        <div class="footer-note">Built for clearer role selection and stronger applications. &copy; SignalBench LLC</div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/site.js"></script>
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll("[data-persona-tab]");
+      var panels = document.querySelectorAll("[data-persona-panel]");
+      var poster = document.querySelector("[data-demo-poster]");
+      var video = document.querySelector("[data-demo-video]");
+      var playButton = document.querySelector("[data-demo-play]");
+
+      function setActivePersona(key) {
+        tabs.forEach(function (tab) {
+          var isActive = tab.getAttribute("data-persona-tab") === key;
+          tab.classList.toggle("is-active", isActive);
+          tab.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+
+        panels.forEach(function (panel) {
+          var isActive = panel.getAttribute("data-persona-panel") === key;
+          panel.hidden = !isActive;
+        });
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          setActivePersona(tab.getAttribute("data-persona-tab"));
+        });
+      });
+
+      function syncDemoState() {
+        if (!poster || !video) return;
+        poster.classList.toggle("is-playing", !video.paused && !video.ended);
+      }
+
+      function startDemo() {
+        if (!video) return;
+        video.currentTime = 0;
+
+        var playPromise = video.play();
+
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(function () {});
+        }
+      }
+
+      if (playButton && video) {
+        video.load();
+
+        video.addEventListener("loadeddata", function () {
+          if (video.paused && video.currentTime === 0) {
+            try {
+              video.currentTime = 0.01;
+            } catch (error) {}
+          }
+        }, { once: true });
+
+        playButton.addEventListener("click", function () {
+          startDemo();
+        });
+
+        video.addEventListener("click", function () {
+          if (video.paused || video.ended) {
+            startDemo();
+          } else {
+            video.pause();
+          }
+        });
+
+        video.addEventListener("play", syncDemoState);
+        video.addEventListener("pause", syncDemoState);
+        video.addEventListener("ended", function () {
+          video.currentTime = 0;
+          syncDemoState();
+        });
+
+        syncDemoState();
+      }
+    })();
+  </script>
+</body>
+</html>
