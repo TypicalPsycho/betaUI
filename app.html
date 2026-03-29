@@ -763,8 +763,25 @@
     }
     .typing{
       display:none;
+      align-items:center;
+      gap:10px;
       font-size:var(--fs-12);
       color:var(--muted);
+    }
+    .typing-copy{
+      flex:1 1 auto;
+    }
+    .typing-stop{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:11px;
+      cursor:pointer;
+    }
+    .typing-stop:hover{
+      background:var(--panel);
     }
     .markdown-view{
       flex:1 1 auto;
@@ -1239,7 +1256,10 @@
             No messages yet. Start with a common next step or ask a question to begin.
           </div>
           <div class="messages" id="messages" aria-live="polite"></div>
-          <div class="typing" id="typing">Assistant is typing…</div>
+          <div class="typing" id="typing">
+            <span class="typing-copy" id="typingText">Assistant is typing...</span>
+            <button class="typing-stop" id="typingStop" type="button" style="display:none;">Stop</button>
+          </div>
         </section>
 
         <section class="markdown-view" id="markdownView" aria-label="Read-only Markdown" style="display:none;">
@@ -1442,10 +1462,11 @@
     })();
 
     const ApiAdapter = (local) => {
-      const postJson = async (path, payload) => {
+      const postJson = async (path, payload, options={}) => {
         const res = await window.SBAuth.fetch(`${API_BASE}${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: options.signal,
           body: JSON.stringify(payload || {})
         });
         const text = await res.text();
@@ -1527,8 +1548,8 @@
           const store = UIStore.load();
           return store.activeCaseId || null;
         },
-        sendTurn(payload){
-          return postJson("/turn", payload);
+        sendTurn(payload, options={}){
+          return postJson("/turn", payload, options);
         },
         getMessages(localCaseId){
           const store = UIStore.load();
@@ -1787,6 +1808,8 @@
     const chatEmpty = el("chatEmpty");
     const messagesEl = el("messages");
     const typingEl = el("typing");
+    const typingTextEl = el("typingText");
+    const typingStopEl = el("typingStop");
     const markdownView = el("markdownView");
     const markdownContent = el("markdownContent");
     const composer = document.querySelector(".composer");
@@ -1796,6 +1819,9 @@
     const billingBannerDismiss = el("billingBannerDismiss");
     const compassWhere = el("compassWhere");
     const compassSteps = el("compassSteps");
+    const STREAM_FIRST_TOKEN_TIMEOUT_MS = 30000;
+    const FALLBACK_TIMEOUT_MS = 45000;
+    let activeTurnAbort = null;
     const msgInput = el("msg");
     const btnClearDemo = el("btnClearDemo");
 
@@ -2879,10 +2905,73 @@
       return match ? match[0] : "";
     }
 
-    async function streamTurn(payload, onDelta){
+    function setTypingState(message, cancelable=false){
+      if (typingTextEl) typingTextEl.textContent = message || "Assistant is typing...";
+      typingEl.style.display = "flex";
+      if (typingStopEl){
+        typingStopEl.style.display = cancelable ? "inline-flex" : "none";
+      }
+    }
+
+    function createLinkedAbortController(parentController, timeoutMs, timeoutReason){
+      const controller = new AbortController();
+      let reason = null;
+      let parentListener = null;
+      const abort = (nextReason) => {
+        if (controller.signal.aborted) return;
+        reason = nextReason || reason || "aborted";
+        controller.abort();
+      };
+      const timeoutId = timeoutMs > 0
+        ? setTimeout(() => abort(timeoutReason), timeoutMs)
+        : null;
+      if (parentController){
+        parentListener = () => abort(parentController.__sbReason || "user_stop");
+        if (parentController.signal.aborted){
+          parentListener();
+        } else {
+          parentController.signal.addEventListener("abort", parentListener, { once: true });
+        }
+      }
+      return {
+        controller,
+        signal: controller.signal,
+        abort,
+        getReason: () => reason,
+        cleanup(){
+          if (timeoutId) clearTimeout(timeoutId);
+          if (parentController && parentListener){
+            parentController.signal.removeEventListener("abort", parentListener);
+          }
+        }
+      };
+    }
+
+    function buildPendingStatus(phase, elapsedMs){
+      if (phase === "fallback"){
+        if (elapsedMs >= 30000) return "Okay, I'll try one more thing, then call it.";
+        if (elapsedMs >= 15000) return "I'm going to try something else...";
+        return "Streaming stalled. Trying a backup response path...";
+      }
+      if (elapsedMs >= 30000) return "There's a bit of a line. I may switch to a backup path.";
+      if (elapsedMs >= 15000) return "There's a bit of a line, give me a minute...";
+      return "Thinking...";
+    }
+
+    function updatePendingAssistantStatus(assistantMsg, phase, phaseStartMs, force=false){
+      if (!assistantMsg) return;
+      const next = buildPendingStatus(phase, Date.now() - phaseStartMs);
+      if (force || assistantMsg.content === "Thinking..." || assistantMsg.content === "" || assistantMsg.content !== next){
+        assistantMsg.content = next;
+        setTypingState(next, true);
+      }
+    }
+
+    async function streamTurn(payload, onDelta, options={}){
       const res = await window.SBAuth.fetch(`${API_BASE}/turn_stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: options.signal,
         body: JSON.stringify(payload || {})
       });
 
@@ -2932,6 +3021,8 @@
           if (eventType === "delta"){
             const delta = data?.delta || "";
             if (delta && onDelta) onDelta(delta);
+          } else if (eventType === "heartbeat" || eventType === "status"){
+            if (options.onStatus) options.onStatus(data || {});
           } else if (eventType === "done"){
             donePayload = data;
           }
@@ -2981,7 +3072,6 @@
       }
       state.scrollMode = "bottom";
       renderMessages();
-      typingEl.style.display = "block";
 
       const assistantMsg = {
         id: String(Date.now()) + Math.random().toString(16).slice(2),
@@ -2992,6 +3082,7 @@
       state.messages.push(assistantMsg);
       state.scrollMode = "bottom";
       renderMessages();
+      setTypingState("Thinking...", true);
 
       const orch = storeSnapshot.orch || { userId: null, caseMap: {} };
       const turnId = (crypto.randomUUID
@@ -3008,9 +3099,31 @@
         client_state_hint: stageToState(state.activeStage)
       };
 
+      let requestController = null;
+      let statusInterval = null;
       try{
+        requestController = new AbortController();
+        requestController.__sbReason = null;
+        activeTurnAbort = () => {
+          requestController.__sbReason = "user_stop";
+          requestController.abort();
+        };
+        if (typingStopEl){
+          typingStopEl.onclick = activeTurnAbort;
+        }
         let sawDelta = false;
         let lastRender = 0;
+        let phase = "stream";
+        let phaseStartMs = Date.now();
+        let streamAbortReason = null;
+        let fallbackAbortReason = null;
+        let streamTimeoutBundle = null;
+        statusInterval = setInterval(() => {
+          if (!sawDelta){
+            updatePendingAssistantStatus(assistantMsg, phase, phaseStartMs);
+            renderMessages();
+          }
+        }, 5000);
         const renderStreaming = (force=false) => {
           const now = Date.now();
           if (force || now - lastRender > 120){
@@ -3032,10 +3145,15 @@
         const onDelta = (delta) => {
           if (!sawDelta){
             sawDelta = true;
+            if (streamTimeoutBundle){
+              streamTimeoutBundle.cleanup();
+              streamTimeoutBundle = null;
+            }
             assistantMsg.content = "";
             if (chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 2){
               chat.scrollTop = Math.max(0, chat.scrollTop - 1);
             }
+            setTypingState("Assistant is typing...", true);
           }
           assistantMsg.content += delta;
           renderStreaming();
@@ -3043,13 +3161,59 @@
 
         let resp = null;
         try{
-          resp = await streamTurn(payload, onDelta);
+          streamTimeoutBundle = createLinkedAbortController(
+            requestController,
+            STREAM_FIRST_TOKEN_TIMEOUT_MS,
+            "stream_timeout"
+          );
+          resp = await streamTurn(payload, onDelta, {
+            signal: streamTimeoutBundle.signal,
+            onStatus: (data) => {
+              if (!sawDelta){
+                const next = data?.phase === "streaming"
+                  ? "Still working on it..."
+                  : buildPendingStatus(phase, phaseStartMs);
+                setTypingState(next, true);
+              }
+            }
+          });
         } catch (streamErr){
+          streamAbortReason = streamTimeoutBundle ? streamTimeoutBundle.getReason() : null;
+          if (streamTimeoutBundle){
+            streamTimeoutBundle.cleanup();
+            streamTimeoutBundle = null;
+          }
+          if (requestController.__sbReason === "user_stop"){
+            throw streamErr;
+          }
           if (!sawDelta){
             try{
-              resp = await DataAdapter.sendTurn(payload);
+              phase = "fallback";
+              phaseStartMs = Date.now();
+              updatePendingAssistantStatus(assistantMsg, phase, phaseStartMs, true);
+              renderMessages();
+              const fallbackTimeoutBundle = createLinkedAbortController(
+                requestController,
+                FALLBACK_TIMEOUT_MS,
+                "fallback_timeout"
+              );
+              try{
+                resp = await DataAdapter.sendTurn(payload, { signal: fallbackTimeoutBundle.signal });
+              } finally {
+                fallbackAbortReason = fallbackTimeoutBundle.getReason();
+                fallbackTimeoutBundle.cleanup();
+              }
             } catch (fallbackErr){
+              if (requestController.__sbReason === "user_stop"){
+                throw fallbackErr;
+              }
               const specific = extractTurnErrorMessage(fallbackErr) || extractTurnErrorMessage(streamErr);
+              if (fallbackAbortReason === "fallback_timeout"){
+                throw new Error("The live response timed out, and the backup attempt also timed out. Please try again. Error 1508.");
+              }
+              if (streamAbortReason === "stream_timeout"){
+                throw new Error(specific || "The live response timed out, and the system could not complete the backup response path. Please try again. Error 1508.");
+              }
               throw new Error(specific || "The live response failed, and the system could not complete the retry. Please try again. Error 1508.");
             }
           } else {
@@ -3059,16 +3223,26 @@
         applyTurnResponse(resp, storeSnapshot, assistantMsg, payload);
         renderStreaming(true);
       } catch (err){
-        const errorText = extractTurnErrorMessage(err) || "The system could not complete your request. Please try again. Error 1500.";
-        if (assistantMsg.content && assistantMsg.content !== "Thinking..."){
-          if (!assistantMsg.content.includes(errorText)){
-            assistantMsg.content += `\n\n${errorText}`;
-          }
+        const aborted = err?.name === "AbortError" || String(err?.message || "").includes("aborted");
+        if (aborted && requestController?.__sbReason === "user_stop"){
+          assistantMsg.content = "Request stopped.";
+          showToast("Request stopped.");
         } else {
-          assistantMsg.content = errorText;
+          const errorText = extractTurnErrorMessage(err) || "The system could not complete your request. Please try again. Error 1500.";
+          if (assistantMsg.content && assistantMsg.content !== "Thinking..."){
+            if (!assistantMsg.content.includes(errorText)){
+              assistantMsg.content += `\n\n${errorText}`;
+            }
+          } else {
+            assistantMsg.content = errorText;
+          }
+          showToast(err?.message || "Request failed.");
         }
-        showToast(err?.message || "Request failed.");
       } finally {
+        if (statusInterval) clearInterval(statusInterval);
+        activeTurnAbort = null;
+        if (typingStopEl) typingStopEl.onclick = null;
+        setTypingState("Assistant is typing...", false);
         typingEl.style.display = "none";
         DataAdapter.sendMessage(state.activeCaseId, assistantMsg);
         state.scrollMode = null;
