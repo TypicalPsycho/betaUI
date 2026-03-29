@@ -1733,49 +1733,56 @@
       screen: {
         goal: "orient, extract requirements and decide whether to invest.",
         steps: [
-          { label: "Deconstruct role", intent_key: "screen.deconstruct_role", seed_prompt: "Deconstruct this JD into real success outcomes." },
-          { label: "Check fit", intent_key: "screen.check_fit_gaps", seed_prompt: "Assess my fit signals and misfit risks. Ask me questions that may close gaps and build out my Storybook." },
-          { label: "Evaluate risks and opportunities", intent_key: "screen.evaluate_risks_opportunities", seed_prompt: "Identify downside risks and upside opportunities before I invest more time." }
+          { label: "Role Reality", intent_key: "screen.role_reality", seed_prompt: "Break this job down into what the company is really hiring for. Summarize in 3 bullets: the top outcomes that matter, the top risks being screened, and what seems overstated, vague, or missing in the JD. Separate fact vs inference." },
+          { label: "Check Fit", intent_key: "screen.check_fit", seed_prompt: "Assess my likely fit for this role using my Storybook, profile, and the JD. Give me 3 strengths, 2 likely gaps, and 1 reason I may be screened out. Be direct and prioritize what matters most. Then ask me 3 targeted questions that would materially improve or change your read of my fit, focusing on missing or underrepresented experience." },
+          { label: "Spot Risks", intent_key: "screen.spot_risks", seed_prompt: "Identify the biggest risks in pursuing this role. Summarize in 4 bullets max: role risk, company risk, leadership risk, and search-strategy risk. Label each as fact, inference, or unknown." },
+          { label: "Worth Pursuing", intent_key: "screen.worth_pursuing", seed_prompt: "Based on what we know now, should I invest serious time in this role? Give a one-line verdict, then 3 reasons why, then 3 things that would change the verdict. Stay conservative. Then ask me 3 focused questions that could uncover evidence strong enough to shift this decision." },
+          { label: "Hidden Signals", intent_key: "screen.hidden_signals", seed_prompt: "What would a strong executive candidate notice in this JD that most people would miss? Give me 4 concrete observations and explain why each matters for how I position myself or whether I proceed. Then ask me 3 targeted questions to uncover experiences or signals I have that map to these hidden expectations but are not yet visible in my profile." }
         ]
       },
       validate: {
         goal: "establish truth sufficiency and build confidence through evidence.",
         steps: [
-          { label: "Stress test", intent_key: "validate.stress_test", seed_prompt: "Challenge my claims against the JD requirements. Ask me questions that may close gaps and build out my Storybook." },
-          { label: "Fill gaps", intent_key: "validate.fill_gaps", seed_prompt: "Tell me what evidence is missing and why. How might we fill the gaps?" },
-          { label: "Prepare application", intent_key: "validate.prepare_application", seed_prompt: "Optimize my resume using Storybook facts for screening." }
+          { label: "Stress Test", intent_key: "validate.stress_test", seed_prompt: "Stress-test my fit and claims against this role. Identify 3 places where my story is strong, 3 places where it may not hold up under scrutiny, and the single biggest credibility risk. Separate evidence from inference. Then ask me 3 targeted questions that could reduce uncertainty or directly address the biggest risks you identified." },
+          { label: "Fill Gaps", intent_key: "validate.fill_gaps", seed_prompt: "Tell me what evidence is still missing for this role. Give me 5 targeted questions you need answered to improve confidence, and explain briefly what each answer would clarify." },
+          { label: "Tune Resume", intent_key: "validate.tune_resume", seed_prompt: "Tune my resume for this role using only verified experience. Prioritize the top 5 signals this role is screening for, and recommend 5 concrete resume changes that improve visibility and differentiation while staying truthful." },
+          { label: "Competitive Read", intent_key: "validate.competitive_read", seed_prompt: "Based on the JD and my background, where am I likely to stand out and where might stronger competitors beat me? Summarize in 3 differentiators, 3 vulnerabilities, and 1 positioning move that could improve my odds. Then ask me 3 targeted questions that could surface stronger differentiators or close key gaps in how I'm currently represented." },
+          { label: "Better Questions", intent_key: "validate.better_questions", seed_prompt: "Help me think better before I apply. Give me 5 high-value questions I should answer for myself about this role, this company, and my fit. Make them reflective, not generic." }
         ]
       },
       prepare: {
         goal: "optimize signal expression inside known truth boundaries.",
         steps: [
-          { label: "Build narrative spine", intent_key: "prepare.build_narrative_spine", seed_prompt: "Draft a narrative spine for this role to anchor what we know from the JD to what we might expect downstream." },
-          { label: "Prepare stories", intent_key: "prepare.prepare_stories", seed_prompt: "Pick and develop my top 3-5 stories with me that will likely be asked in the interview. Ask me questions along the way." },
-          { label: "Clarify signal", intent_key: "prepare.clarify_signal", seed_prompt: "Help me tighten my evidence-based signals without adding claims." }
+          { label: "Tell My Story", intent_key: "prepare.tell_my_story", seed_prompt: "Turn my background into a clear, role-relevant story. Write 3 short bullets: who I am as an operator, what I consistently do well, and why I make sense for this role now. Keep it plain, sharp, and evidence-based. Then ask me 3 targeted questions to uncover stronger positioning, missing context, or results that would make this story more compelling and complete." },
+          { label: "Pick Stories", intent_key: "prepare.pick_stories", seed_prompt: "Choose the top 5 stories I should be ready to use for this interview. For each, give: the likely question it supports, the signal it proves, and the one result that matters most. If necessary, ask me targeted questions to deepen or strengthen the weakest or least-developed stories for my Storybook." },
+          { label: "Sharpen Signal", intent_key: "prepare.sharpen_signal", seed_prompt: "Help me express my strongest signals more clearly without adding claims. Identify 4 places where my current wording is too vague, generic, or diluted, and rewrite each one more sharply and truthfully." },
+          { label: "Predict Questions", intent_key: "prepare.predict_questions", seed_prompt: "Predict the 8 most likely interview questions for this role. Rank them from most to least likely, and for each one tell me what they are really testing beneath the surface." },
+          { label: "Read Concerns", intent_key: "prepare.read_concerns", seed_prompt: "What concerns is this interviewer or hiring team most likely to have about me? Give me 4 likely concerns, explain why each might surface, and tell me what evidence or framing would best address each one. Then ask me 3-4 targeted questions that would help directly neutralize these concerns with stronger or missing evidence." }
         ]
       },
       advance: {
         goal: "learn and recalibrate as real interactions occur.",
         steps: [
-          { label: "Debrief interview", intent_key: "advance.debrief_interview", seed_prompt: "Help me debrief: what happened & what it meant. I'll start with a narrative, then you ask necessary questions." },
-          { label: "Update hypothesis", intent_key: "advance.update_hypothesis", seed_prompt: "Update employer intent, facts and hypotheses based on new signals from the interviews." },
-          { label: "Draft follow-up", intent_key: "advance.draft_follow_up", seed_prompt: "Draft a tailored follow-up reinforcing key alignment." }
+          { label: "Debrief Interview", intent_key: "advance.debrief_interview", seed_prompt: "Help me debrief this interview. First extract the 5 most important signals from what happened, then tell me what they likely meant, and end with the 3 biggest implications for my next move. Ask follow-up questions if needed." },
+          { label: "Update Read", intent_key: "advance.update_read", seed_prompt: "Update your read of the role, the company, and my standing based on the latest interview signals. Summarize in 3 sections: what got stronger, what got weaker, and what is still unclear. Then ask me 3 targeted questions that would clarify ambiguous signals or significantly improve confidence in your updated view." },
+          { label: "Draft Follow-Up", intent_key: "advance.draft_follow_up", seed_prompt: "Draft a follow-up note that reinforces alignment without sounding polished or generic. Keep it to 150 words max and anchor it to 3 specific signals from the interview." },
+          { label: "Decode Signals", intent_key: "advance.decode_signals", seed_prompt: "Interpret what the process signals likely mean. Use 5 bullets max to assess pace, tone, interviewer behavior, openness, and friction. Do not over-read a single event; show where confidence is high vs low." },
+          { label: "Next Round", intent_key: "advance.next_round", seed_prompt: "Based on what we know now, what should I be most ready for in the next round? Give me the top 5 themes, the top 3 risks, and the 1 thing I should not overdo. Then ask me 3 targeted questions that would help uncover missing proof or preparation gaps for the next stage." }
         ]
       },
       launch: {
         goal: "negotiate eyes-open; consolidate evidence; surface residual risk before acceptance.",
         steps: [
-          { label: "Pressure test", intent_key: "launch.pressure_test", seed_prompt: "List top risks still unresolved before I accept." },
-          { label: "Negotiate terms", intent_key: "launch.negotiate_terms", seed_prompt: "Help me negotiate comp, scope, and authority." },
-          { label: "Plan entry", intent_key: "launch.plan_entry", seed_prompt: "Draft a 30-60-90 entry plan for this role. Include all facts, hypotheses and unknowns as well as cultural and personal insights." }
+          { label: "Pressure Test", intent_key: "launch.pressure_test", seed_prompt: "Before I commit, pressure-test this opportunity. List the 5 biggest unresolved risks, rank them highest to lowest, and explain what evidence would reduce each one. Then ask me 3 targeted questions that could materially reduce uncertainty around the top risks or reveal hidden constraints." },
+          { label: "Negotiate Smart", intent_key: "launch.negotiate_smart", seed_prompt: "Help me prepare for negotiation. Organize this into 3 parts: what matters most for me to clarify or improve, what I have leverage on, and what I should handle carefully so I do not weaken my position." },
+          { label: "Scope Check", intent_key: "launch.scope_check", seed_prompt: "Test whether the role's scope, authority, and expectations are actually aligned. Give me 4 specific areas where verbal promises may hide ambiguity, and draft 1 sharp question for each area. Then ask me one targeted question to understand my prior scope, expectations, and operating preferences so we can detect misalignment early." },
+          { label: "Start Strong", intent_key: "launch.start_strong", seed_prompt: "Draft a practical 30-60-90 entry frame for this role. Keep it to 12 bullets total: 4 for first 30 days, 4 for days 31-60, 4 for days 61-90. Clearly label each bullet as fact, hypothesis, or open question." },
+          { label: "Final Read", intent_key: "launch.final_read", seed_prompt: "Give me the clearest final read on this opportunity without telling me what to choose. Summarize in 3 sections: strongest reasons this could work, biggest reasons it could fail, and the tradeoffs I need to see clearly before deciding. Then ask me 2 targeted questions that would sharpen my personal decision criteria and surface anything important that hasn't yet been captured." }
         ]
       },
       closed: {
         goal: "archived casefiles for reference.",
-        steps: [
-          { label: "Extract signals", intent_key: "closed.extract_signals", seed_prompt: "Extract reusable signals and stories for future roles." },
-          { label: "Do retrospective", intent_key: "closed.do_retrospective", seed_prompt: "Reflect on what we learned through the journey of this casefile." }
-        ]
+        steps: []
       }
     };
 
